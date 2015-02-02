@@ -106,10 +106,12 @@ define([
                         'groups': [
                             {
                                 'version': 1,
-                                'name': 'Group 1'
+                                'name': 'Group 1',
+                                'usage': []
                             }, {
                                 'version': 1,
-                                'name': 'Group 2'
+                                'name': 'Group 2',
+                                'usage': []
                             }
                         ]
                     },
