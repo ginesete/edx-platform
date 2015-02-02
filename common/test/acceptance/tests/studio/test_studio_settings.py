@@ -109,7 +109,7 @@ class ContentGroupConfigurationTest(StudioCourseTest):
         config = self.group_configurations_page.content_groups[0]
         config.save()
         self.assertEqual(config.mode, 'edit')
-        self.assertEqual("Group name is required", config.validation_message)
+        self.assertEqual("Group name is required.", config.validation_message)
         config.name = "Content Group Name"
         config.save()
         self.assertIn("Content Group Name", config.name)
