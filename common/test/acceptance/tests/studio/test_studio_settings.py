@@ -84,16 +84,16 @@ class ContentGroupConfigurationTest(StudioCourseTest):
 
         self.assertIn("Updated Second Content Group", second_config.name)
 
-    def test_cannot_delete_content_group(self):
+    def test_can_see_the_delete_button_for_content_group(self):
         """
-        Scenario: Delete is not currently supported for content groups.
+        Scenario: Delete is supported for content groups.
         Given I have a course without content groups
         When I create a content group
-        Then there is no delete button
+        Then there is a delete button
         """
         self.group_configurations_page.visit()
         config = self.create_and_verify_content_group("New Content Group", 0)
-        self.assertTrue(config.delete_button_is_absent)
+        self.assertTrue(config.delete_button_is_present)
 
     def test_must_supply_name(self):
         """
