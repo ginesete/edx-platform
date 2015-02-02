@@ -3,13 +3,14 @@ define([
     'js/collections/group_configuration', 'js/collections/group',
     'js/views/group_configuration_details', 'js/views/group_configurations_list', 'js/views/group_configuration_editor',
     'js/views/group_configuration_item', 'js/views/experiment_group_edit', 'js/views/content_group_list',
+    'js/views/content_group_details',
     'js/views/feedback_notification', 'js/common_helpers/ajax_helpers', 'js/common_helpers/template_helpers',
     'js/spec_helpers/view_helpers', 'jasmine-stealth'
 ], function(
     _, Course, GroupConfigurationModel, GroupModel, GroupConfigurationCollection, GroupCollection,
     GroupConfigurationDetailsView, GroupConfigurationsListView, GroupConfigurationEditorView,
-    GroupConfigurationItemView, ExperimentGroupEditView, GroupList, Notification, AjaxHelpers, TemplateHelpers,
-    ViewHelpers
+    GroupConfigurationItemView, ExperimentGroupEditView, GroupList, ContentGroupDetailsView,
+    Notification, AjaxHelpers, TemplateHelpers, ViewHelpers
 ) {
     'use strict';
     var SELECTORS = {
@@ -838,5 +839,119 @@ define([
             view.collection.add({name: 'Editing Group', editing: true});
             verifyEditingGroup(view, true);
         });
+
     });
+
+    describe('Content groups details view', function() {
+
+        beforeEach(function() {
+            TemplateHelpers.installTemplate('content-group-details', true);
+            this.model = new GroupModel({name: 'Content Group', id: 0});
+
+            var saveableModel = new GroupConfigurationModel({
+                name: 'Content Group Configuration',
+                id: 0,
+                scheme:'cohort',
+                groups: new GroupCollection([this.model]),
+            }, {canBeEmpty: true});
+
+            saveableModel.urlRoot = '/mock_url';
+
+            this.collection = new GroupConfigurationCollection([ saveableModel ]);
+            this.collection.outlineUrl = '/outline';
+
+            this.view = new ContentGroupDetailsView({
+                model: this.model
+            });
+            appendSetFixtures(this.view.render().el);
+        });
+
+        it('should render properly', function() {
+            expect(this.view.$el).toContainText('Content Group');
+            expect(this.view.$el).toContainText('ID: 0');
+            expect(this.view.$('.delete')).toExist();
+        });
+
+        it('should show empty usage appropriately', function() {
+            this.model.set('showContentGroupUsages', false);
+            this.view.$('.show-groups').click();
+
+            expect(this.model.get('showContentGroupUsages')).toBeTruthy();
+            expect(this.view.$(SELECTORS.usageCount)).not.toExist();
+            expect(this.view.$(SELECTORS.usageText))
+                .toContainText('This content group is not in use. ');
+            expect(this.view.$(SELECTORS.usageTextAnchor)).toExist();
+            expect(this.view.$(SELECTORS.usageUnit)).not.toExist();
+        });
+
+        it('should hide empty usage appropriately', function() {
+            this.model.set('showContentGroupUsages', true);
+            this.view.$('.hide-groups').click();
+
+            expect(this.view.$(SELECTORS.usageText)).not.toExist();
+            expect(this.view.$(SELECTORS.usageUnit)).not.toExist();
+            expect(this.view.$(SELECTORS.usageCount))
+                .toContainText('Not in Use');
+        });
+
+        it('should show non-empty usage appropriately', function() {
+            var usageUnitAnchors;
+
+            this.model.set('usage', [
+                {'label': 'label1', 'url': 'url1'},
+                {'label': 'label2', 'url': 'url2'}
+            ]);
+
+            this.model.set('showContentGroupUsages', false);
+            this.view.$('.show-groups').click();
+
+            usageUnitAnchors = this.view.$(SELECTORS.usageUnitAnchor);
+
+            expect(this.view.$('li.action-delete')).toHaveAttr(
+                'data-tooltip', 'Cannot delete when in use by an unit'
+            );
+            expect(this.view.$('.delete')).toHaveClass('is-disabled');
+            expect(this.view.$(SELECTORS.usageCount)).not.toExist();
+            expect(this.view.$(SELECTORS.usageText))
+                .toContainText('This content group is used in:');
+            expect(this.view.$(SELECTORS.usageUnit).length).toBe(2);
+            expect(usageUnitAnchors.length).toBe(2);
+            expect(usageUnitAnchors.eq(0)).toContainText('label1');
+            expect(usageUnitAnchors.eq(0).attr('href')).toBe('url1');
+            expect(usageUnitAnchors.eq(1)).toContainText('label2');
+            expect(usageUnitAnchors.eq(1).attr('href')).toBe('url2');
+        });
+
+        it('should hide non-empty usage appropriately', function() {
+            this.model.set('usage', [
+                {'label': 'label1', 'url': 'url1'},
+                {'label': 'label2', 'url': 'url2'}
+            ]);
+            this.model.set('showContentGroupUsages', true);
+            this.view.$('.hide-groups').click();
+
+            expect(this.view.$('li.action-delete')).toHaveAttr(
+                'data-tooltip', 'Cannot delete when in use by an unit'
+            );
+            expect(this.view.$('.delete')).toHaveClass('is-disabled');
+            expect(this.view.$(SELECTORS.usageText)).not.toExist();
+            expect(this.view.$(SELECTORS.usageUnit)).not.toExist();
+            expect(this.view.$(SELECTORS.usageCount))
+                .toContainText('Used in 2 units');
+        });
+
+        it('should hide validation icons and messages appropriately', function() {
+            this.model.set('usage', [
+                {'label': 'label1', 'url': 'url1'},
+                {'label': 'label2', 'url': 'url2'}
+            ]);
+            this.model.set('showContentGroupUsages', true);
+            this.view.$('.hide-groups').click();
+
+            expect(this.view.$(SELECTORS.usageUnitMessage)).not.toExist();
+            expect(this.view.$(SELECTORS.usageUnitWarningIcon)).not.toExist();
+            expect(this.view.$(SELECTORS.usageUnitErrorIcon)).not.toExist();
+        });
+    });
+
 });

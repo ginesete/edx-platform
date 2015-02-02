@@ -22,7 +22,7 @@
             <div class="wrapper-group-configuration-validation usage-validation">
                 <i class="icon fa fa-warning"></i>
                 <p class="group-configuration-validation-text">
-                    <%= gettext('This content group is currently used in different problems.') %>
+                    <%= gettext('This content group is currently used in different unit(s).') %>
                 </p>
             </div>
         <% } %>
@@ -33,11 +33,11 @@
 
          <% if (!isNew) { %>
             <% if (_.isEmpty(usage)) { %>
-                <span class="wrapper-delete-button">
+                <span class="wrapper-delete-button" data-tooltip="<%= gettext("Delete") %>">
                     <a class="button action-delete delete" href="#"><%= gettext("Delete") %></a>
                 </span>
             <% } else { %>
-                <span class="wrapper-delete-button" data-tooltip="<%= gettext('Cannot delete when in use by an unit') %>">
+                <span class="wrapper-delete-button" data-tooltip="<%= gettext('Cannot delete when in use by a unit') %>">
                     <a class="button action-delete delete is-disabled" href="#" aria-disabled="true" ><%= gettext("Delete") %></a>
                 </span>
             <% } %>

@@ -622,7 +622,9 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
         Test if content group json updated successfully with usage information.
         """
         self._add_user_partitions(count=1, scheme_id='cohort')
-        vertical, __ = self._create_problem_with_content_group(cid=0, group_id=1, name_suffix='0', special_characters=u"JOSÉ ANDRÉS")
+        vertical, __ = self._create_problem_with_content_group(
+            cid=0, group_id=1, name_suffix='0', special_characters=u"JOSÉ ANDRÉS"
+        )
 
         actual = GroupConfiguration.get_or_create_content_group_configuration_with_usage(self.store, self.course)
         expected = {

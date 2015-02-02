@@ -79,7 +79,7 @@ define([
                         Translators: 'outlineAnchor' is an anchor pointing to
                         the course outline page.
                     */
-                    'This content group is not in use. Add a content group to any unit from the Course %(outlineAnchor)s.'
+                    'This content group is not in use. Add a content group to any unit from the %(outlineAnchor)s.'
                 ),
                 anchor = str.sprintf(
                     '<a href="%(url)s" title="%(text)s">%(text)s</a>',
