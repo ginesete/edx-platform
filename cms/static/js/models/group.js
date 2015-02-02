@@ -37,7 +37,7 @@ define([
         validate: function(attrs) {
             if (!str.trim(attrs.name)) {
                 return {
-                    message: gettext('Group name is required'),
+                    message: gettext('Group name is required.'),
                     attributes: { name: true }
                 };
             }

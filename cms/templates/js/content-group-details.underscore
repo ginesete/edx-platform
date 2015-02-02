@@ -27,7 +27,7 @@
             <button class="edit"><i class="icon fa fa-pencil"></i> <%= gettext("Edit") %></button>
         </li>
         <% if (_.isEmpty(usage)) { %>
-            <li class="action action-delete wrapper-delete-button">
+            <li class="action action-delete wrapper-delete-button" data-tooltip="<%= gettext('Delete') %>">
                 <button class="delete action-icon"><i class="icon fa fa-trash-o"></i><span><%= gettext("Delete") %></span></button>
             </li>
         <% } else { %>
