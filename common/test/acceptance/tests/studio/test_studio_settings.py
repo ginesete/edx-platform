@@ -6,6 +6,7 @@ from nose.plugins.attrib import attr
 
 from base_studio_test import StudioCourseTest
 
+from ...fixtures.course import XBlockFixtureDesc
 from ...pages.studio.settings_advanced import AdvancedSettingsPage
 from ...pages.studio.settings_group_configurations import GroupConfigurationsPage
 
@@ -84,16 +85,46 @@ class ContentGroupConfigurationTest(StudioCourseTest):
 
         self.assertIn("Updated Second Content Group", second_config.name)
 
-    def test_can_see_the_delete_button_for_content_group(self):
+    def test_can_delete_unused_content_group(self):
         """
-        Scenario: Delete is supported for content groups.
-        Given I have a course without content groups
-        When I create a content group
-        Then there is a delete button
+        Scenario: Ensure that the user can delete unused content group.
+        Given I have a course with 1 Content Group
+        And I go to the Group Configuration page
+        When I delete the Content Group with name "New Content Group"
+        Then I see that there is no Content Group
         """
         self.group_configurations_page.visit()
         config = self.create_and_verify_content_group("New Content Group", 0)
         self.assertTrue(config.delete_button_is_present)
+
+        self.assertEqual(len(self.group_configurations_page.content_groups), 1)
+
+        # Delete content group
+        config.delete()
+        self.assertEqual(len(self.group_configurations_page.content_groups), 0)
+
+    def test_cannot_delete_used_content_group(self):
+        """
+        Scenario: Ensure that the user cannot delete used content group.
+        Given I have a course with 1 Content Group
+        And I go to the Group Configuration page
+        When I try to delete the Content Group with name "New Content Group"
+        Then I see that the delete button is disabled
+        And I see the text in tooltip 'Cannot delete when in use by a unit'
+        """
+        self.group_configurations_page.visit()
+
+        config = self.create_and_verify_content_group("New Content Group", 0)
+
+        vertical = self.course_fixture.get_nested_xblocks(category="vertical")[0]
+        self.course_fixture.create_xblock(
+            vertical.locator,
+            XBlockFixtureDesc('problem', 'Test Content Group', metadata={'group_access': [0]})
+        )
+
+        self.assertTrue(config.delete_button_is_disabled)
+        self.assertEqual(len(self.group_configurations_page.content_groups), 1)
+        self.assertIn('Cannot delete when in use by a unit', config.delete_note)
 
     def test_must_supply_name(self):
         """
