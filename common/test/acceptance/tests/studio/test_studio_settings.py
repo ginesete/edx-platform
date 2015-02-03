@@ -169,6 +169,7 @@ class ContentGroupConfigurationTest(StudioCourseTest):
             timeout=30
         ).fulfill()
 
+
 @attr('shard_1')
 class AdvancedSettingsValidationTest(StudioCourseTest):
     """
