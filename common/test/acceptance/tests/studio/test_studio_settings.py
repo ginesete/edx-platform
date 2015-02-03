@@ -5,8 +5,11 @@ Acceptance tests for Studio's Setting pages
 from nose.plugins.attrib import attr
 
 from base_studio_test import StudioCourseTest
+from bok_choy.promise import EmptyPromise
 
 from ...fixtures.course import XBlockFixtureDesc
+from ...pages.studio.container import ContainerPage
+from ...pages.studio.overview import CourseOutlineUnit
 from ...pages.studio.settings_advanced import AdvancedSettingsPage
 from ...pages.studio.settings_group_configurations import GroupConfigurationsPage
 
@@ -116,10 +119,10 @@ class ContentGroupConfigurationTest(StudioCourseTest):
 
         config = self.create_and_verify_content_group("New Content Group", 0)
 
-        vertical = self.course_fixture.get_nested_xblocks(category="vertical")[0]
+        vertical = self.course_fixture.get_nested_xblocks(category="vertical")
         self.course_fixture.create_xblock(
             vertical.locator,
-            XBlockFixtureDesc('problem', 'Test Content Group', metadata={'group_access': [0]})
+            XBlockFixtureDesc('problem', 'Test Content Group', metadata={'group_access': {config.id: [0]}})
         )
 
         self.assertTrue(config.delete_button_is_disabled)
@@ -159,6 +162,64 @@ class ContentGroupConfigurationTest(StudioCourseTest):
         config.name = "Content Group"
         config.cancel()
         self.assertEqual(0, len(self.group_configurations_page.content_groups))
+
+    def test_content_group_empty_usage(self):
+        """
+        Scenario: When content group is not used, ensure that the link to outline page works correctly.
+        Given I have a course without content group
+        And I create new content group
+        Then I see a link to the outline page
+        When I click on the outline link
+        Then I see the outline page
+        """
+        self.group_configurations_page.visit()
+        config = self.create_and_verify_content_group("New Content Group", 0)
+        config.toggle()
+        config.click_outline_anchor()
+
+        # Waiting for the page load and verify that we've landed on course outline page
+        EmptyPromise(
+            lambda: self.outline_page.is_browser_on_page(), "loaded page {!r}".format(self.outline_page),
+            timeout=30
+        ).fulfill()
+
+    def test_content_group_non_empty_usage(self):
+        """
+        Scenario: When content group is used, ensure that the links to units using a content group work correctly.
+        Given I have a course without content group
+        And I create new content group
+        And I create a unit and assign the newly created content group
+        And open the Group Configuration page
+        Then I see a link to the newly created unit
+        When I click on the unit link
+        Then I see correct unit page
+        """
+        config = self.create_and_verify_content_group("New Content Group", 0)
+
+        # Assign newly created content group to unit
+        vertical = self.course_fixture.get_nested_xblocks(category="vertical")
+        self.course_fixture.create_xblock(
+            vertical.locator,
+            XBlockFixtureDesc('problem', 'Test Content Group', metadata={'group_access': {config.id: [0]}})
+        )
+        import sys
+        print sys.stderr, config
+        unit = CourseOutlineUnit(self.browser, vertical.locator)
+
+        # Go to the Group Configuration Page and click unit anchor
+        self.group_configurations_page.visit()
+        config.toggle()
+        usage = config.usages[0]
+        config.click_unit_anchor()
+
+        unit = ContainerPage(self.browser, vertical.locator)
+        # Waiting for the page load and verify that we've landed on the unit page
+        EmptyPromise(
+            lambda: unit.is_browser_on_page(), "loaded page {!r}".format(unit),
+            timeout=30
+        ).fulfill()
+
+        self.assertIn(unit.name, usage)
 
 
 @attr('shard_1')
