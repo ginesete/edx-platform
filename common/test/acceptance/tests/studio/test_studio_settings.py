@@ -6,12 +6,14 @@ from nose.plugins.attrib import attr
 
 from base_studio_test import StudioCourseTest
 from bok_choy.promise import EmptyPromise
+from xmodule.partitions.partitions import Group
 
 from ...fixtures.course import XBlockFixtureDesc
 from ...pages.studio.container import ContainerPage
-from ...pages.studio.overview import CourseOutlineUnit
+from ...pages.studio.overview import CourseOutlinePage, CourseOutlineUnit
 from ...pages.studio.settings_advanced import AdvancedSettingsPage
 from ...pages.studio.settings_group_configurations import GroupConfigurationsPage
+from ..helpers import create_user_partition_json
 
 
 @attr('shard_1')
@@ -23,6 +25,13 @@ class ContentGroupConfigurationTest(StudioCourseTest):
     def setUp(self):
         super(ContentGroupConfigurationTest, self).setUp()
         self.group_configurations_page = GroupConfigurationsPage(
+            self.browser,
+            self.course_info['org'],
+            self.course_info['number'],
+            self.course_info['run']
+        )
+
+        self.outline_page = CourseOutlinePage(
             self.browser,
             self.course_info['org'],
             self.course_info['number'],
@@ -116,10 +125,22 @@ class ContentGroupConfigurationTest(StudioCourseTest):
         And I see the text in tooltip 'Cannot delete when in use by a unit'
         """
         self.group_configurations_page.visit()
+        self.course_fixture._update_xblock(self.course_fixture._course_location, {
+            "metadata": {
+                u"user_partitions": [
+                    create_user_partition_json(
+                        0,
+                        'Name of the Content Group',
+                        'Description of the Content Group.',
+                        [Group("0", 'Group A'), Group("1", 'Group B'), Group("2", 'Group C')]
+                    ),
+                ],
+            },
+        })
 
         config = self.create_and_verify_content_group("New Content Group", 0)
 
-        vertical = self.course_fixture.get_nested_xblocks(category="vertical")
+        vertical = self.course_fixture.get_nested_xblocks(category="vertical")[0]
         self.course_fixture.create_xblock(
             vertical.locator,
             XBlockFixtureDesc('problem', 'Test Content Group', metadata={'group_access': {config.id: [0]}})
@@ -194,20 +215,33 @@ class ContentGroupConfigurationTest(StudioCourseTest):
         When I click on the unit link
         Then I see correct unit page
         """
+        self.group_configurations_page.visit()
         config = self.create_and_verify_content_group("New Content Group", 0)
 
+        self.course_fixture._update_xblock(self.course_fixture._course_location, {
+            "metadata": {
+                u"user_partitions": [
+                    create_user_partition_json(
+                        0,
+                        'Name of the Content Group',
+                        'Description of the Content Group.',
+                        [Group("0", 'Group A'), Group("1", 'Group B'), Group("2", 'Group C')]
+                    ),
+                ],
+            },
+        })
+
         # Assign newly created content group to unit
-        vertical = self.course_fixture.get_nested_xblocks(category="vertical")
+        vertical = self.course_fixture.get_nested_xblocks(category="vertical")[0]
         self.course_fixture.create_xblock(
             vertical.locator,
             XBlockFixtureDesc('problem', 'Test Content Group', metadata={'group_access': {config.id: [0]}})
         )
-        import sys
-        print sys.stderr, config
+
         unit = CourseOutlineUnit(self.browser, vertical.locator)
 
-        # Go to the Group Configuration Page and click unit anchor
-        self.group_configurations_page.visit()
+        # Click unit anchor
+
         config.toggle()
         usage = config.usages[0]
         config.click_unit_anchor()
