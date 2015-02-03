@@ -115,41 +115,6 @@ class ContentGroupConfigurationTest(StudioCourseTest):
         config.delete()
         self.assertEqual(len(self.group_configurations_page.content_groups), 0)
 
-    def test_cannot_delete_used_content_group(self):
-        """
-        Scenario: Ensure that the user cannot delete used content group.
-        Given I have a course with 1 Content Group
-        And I go to the Group Configuration page
-        When I try to delete the Content Group with name "New Content Group"
-        Then I see that the delete button is disabled
-        And I see the text in tooltip 'Cannot delete when in use by a unit'
-        """
-        self.group_configurations_page.visit()
-        self.course_fixture._update_xblock(self.course_fixture._course_location, {
-            "metadata": {
-                u"user_partitions": [
-                    create_user_partition_json(
-                        0,
-                        'Name of the Content Group',
-                        'Description of the Content Group.',
-                        [Group("0", 'Group A'), Group("1", 'Group B'), Group("2", 'Group C')]
-                    ),
-                ],
-            },
-        })
-
-        config = self.create_and_verify_content_group("New Content Group", 0)
-
-        vertical = self.course_fixture.get_nested_xblocks(category="vertical")[0]
-        self.course_fixture.create_xblock(
-            vertical.locator,
-            XBlockFixtureDesc('problem', 'Test Content Group', metadata={'group_access': {config.id: [0]}})
-        )
-
-        self.assertTrue(config.delete_button_is_disabled)
-        self.assertEqual(len(self.group_configurations_page.content_groups), 1)
-        self.assertIn('Cannot delete when in use by a unit', config.delete_note)
-
     def test_must_supply_name(self):
         """
         Scenario: Ensure that validation of the content group works correctly.
@@ -203,58 +168,6 @@ class ContentGroupConfigurationTest(StudioCourseTest):
             lambda: self.outline_page.is_browser_on_page(), "loaded page {!r}".format(self.outline_page),
             timeout=30
         ).fulfill()
-
-    def test_content_group_non_empty_usage(self):
-        """
-        Scenario: When content group is used, ensure that the links to units using a content group work correctly.
-        Given I have a course without content group
-        And I create new content group
-        And I create a unit and assign the newly created content group
-        And open the Group Configuration page
-        Then I see a link to the newly created unit
-        When I click on the unit link
-        Then I see correct unit page
-        """
-        self.group_configurations_page.visit()
-        config = self.create_and_verify_content_group("New Content Group", 0)
-
-        self.course_fixture._update_xblock(self.course_fixture._course_location, {
-            "metadata": {
-                u"user_partitions": [
-                    create_user_partition_json(
-                        0,
-                        'Name of the Content Group',
-                        'Description of the Content Group.',
-                        [Group("0", 'Group A'), Group("1", 'Group B'), Group("2", 'Group C')]
-                    ),
-                ],
-            },
-        })
-
-        # Assign newly created content group to unit
-        vertical = self.course_fixture.get_nested_xblocks(category="vertical")[0]
-        self.course_fixture.create_xblock(
-            vertical.locator,
-            XBlockFixtureDesc('problem', 'Test Content Group', metadata={'group_access': {config.id: [0]}})
-        )
-
-        unit = CourseOutlineUnit(self.browser, vertical.locator)
-
-        # Click unit anchor
-
-        config.toggle()
-        usage = config.usages[0]
-        config.click_unit_anchor()
-
-        unit = ContainerPage(self.browser, vertical.locator)
-        # Waiting for the page load and verify that we've landed on the unit page
-        EmptyPromise(
-            lambda: unit.is_browser_on_page(), "loaded page {!r}".format(unit),
-            timeout=30
-        ).fulfill()
-
-        self.assertIn(unit.name, usage)
-
 
 @attr('shard_1')
 class AdvancedSettingsValidationTest(StudioCourseTest):
