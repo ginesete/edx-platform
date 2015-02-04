@@ -1473,10 +1473,10 @@ class GroupConfiguration(object):
         """
         modules = store.get_items(course.id, settings={'group_access': {'$exists': True}})
 
-        return GroupConfiguration._get_content_groups_usage_info(store, course, modules)
+        return GroupConfiguration._get_content_groups_usage_info(course, modules)
 
     @staticmethod
-    def _get_content_groups_usage_info(store, course, modules):
+    def _get_content_groups_usage_info(course, modules):
         """
         Returns all units names and their urls.
 
@@ -1502,24 +1502,22 @@ class GroupConfiguration(object):
                     if group_id not in usage_info:
                         usage_info[group_id] = []
 
-                    unit_location = store.get_parent_location(module.location)
-                    if not unit_location:
-                        log.warning("Parent location of content_groups module not found: %s", module.location)
-                        continue
+                    module_parent = module.get_parent()
 
-                    try:
-                        unit = store.get_item(unit_location)
-                    except ItemNotFoundError:
-                        log.warning("Unit not found: %s", unit_location)
+                    if not module_parent:
+                        log.warning("Parent module of content_groups not found: %s", module.location)
                         continue
 
                     unit_url = reverse_usage_url(
                         'container_handler',
-                        course.location.course_key.make_usage_key(unit.location.block_type, unit.location.name)
+                        course.location.course_key.make_usage_key(
+                            module_parent.location.block_type,
+                            module_parent.location.name
+                        )
                     )
 
                     usage_info[group_id].append({
-                        'label': u"{} / {}".format(unit.display_name, module.display_name),
+                        'label': u"{} / {}".format(module_parent.display_name, module.display_name),
                         'url': unit_url,
                     })
         return usage_info
@@ -1531,6 +1529,7 @@ class GroupConfiguration(object):
 
         Returns json of particular group configuration updated with usage information.
         """
+        configuration_json = None
         # Get all Experiments that use particular  Group Configuration in course.
         if configuration.scheme.name == 'random':
             split_tests = store.get_items(
