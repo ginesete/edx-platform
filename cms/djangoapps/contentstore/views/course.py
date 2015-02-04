@@ -1541,7 +1541,7 @@ class GroupConfiguration(object):
             configuration_json = configuration.to_json()
             usage_information = GroupConfiguration._get_usage_info(store, course, split_tests)
             configuration_json['usage'] = usage_information.get(configuration.id, [])
-        else:
+        elif configuration.scheme.name == 'cohort':
             # In case if scheme is "cohort"
             configuration_json = GroupConfiguration.update_content_group_usage_info(store, course, configuration)
         return configuration_json

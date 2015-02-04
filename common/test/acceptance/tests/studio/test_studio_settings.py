@@ -51,7 +51,7 @@ class ContentGroupConfigurationTest(StudioCourseTest):
         config.name = name
         # Save the content group
         self.assertEqual(config.get_text('.action-primary'), "Create")
-        self.assertTrue(config.delete_button_is_absent)
+        self.assertFalse(config.delete_button_is_present)
         config.save()
         self.assertIn(name, config.name)
         return config

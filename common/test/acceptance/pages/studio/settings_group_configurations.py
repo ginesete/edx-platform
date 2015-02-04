@@ -170,10 +170,6 @@ class GroupConfiguration(object):
     def delete_button_is_present(self):
         return self.find_css('.actions .delete').present
 
-    @property
-    def delete_button_is_absent(self):
-        return not self.find_css('.actions .delete').present
-
     def delete(self):
         """
         Delete the group configuration.
