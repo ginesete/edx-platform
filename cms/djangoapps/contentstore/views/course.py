@@ -1459,7 +1459,7 @@ class GroupConfiguration(object):
         usage_info = {}
         for split_test in split_tests:
             if split_test.user_partition_id not in usage_info:
-                    usage_info[split_test.user_partition_id] = []
+                usage_info[split_test.user_partition_id] = []
 
             unit_location = store.get_parent_location(split_test.location)
             if not unit_location:
@@ -1742,7 +1742,14 @@ def group_configurations_detail_handler(request, course_key_string, group_config
             if not configuration:
                 return JsonResponse(status=404)
 
-            return remove_content_or_experiment_group(request, store, course, configuration, group_configuration_id, group_id=group_id)
+            return remove_content_or_experiment_group(
+                request,
+                store,
+                course,
+                configuration,
+                group_configuration_id,
+                group_id=group_id
+            )
 
 
 def are_content_experiments_enabled(course):

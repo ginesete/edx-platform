@@ -6,14 +6,9 @@ from nose.plugins.attrib import attr
 
 from base_studio_test import StudioCourseTest
 from bok_choy.promise import EmptyPromise
-from xmodule.partitions.partitions import Group
-
-from ...fixtures.course import XBlockFixtureDesc
-from ...pages.studio.container import ContainerPage
-from ...pages.studio.overview import CourseOutlinePage, CourseOutlineUnit
+from ...pages.studio.overview import CourseOutlinePage
 from ...pages.studio.settings_advanced import AdvancedSettingsPage
 from ...pages.studio.settings_group_configurations import GroupConfigurationsPage
-from ..helpers import create_user_partition_json
 
 
 @attr('shard_1')
@@ -104,6 +99,8 @@ class ContentGroupConfigurationTest(StudioCourseTest):
         And I go to the Group Configuration page
         When I delete the Content Group with name "New Content Group"
         Then I see that there is no Content Group
+        When I refresh the page
+        Then I see that the content group has been deleted
         """
         self.group_configurations_page.visit()
         config = self.create_and_verify_content_group("New Content Group", 0)
@@ -113,6 +110,9 @@ class ContentGroupConfigurationTest(StudioCourseTest):
 
         # Delete content group
         config.delete()
+        self.assertEqual(len(self.group_configurations_page.content_groups), 0)
+
+        self.group_configurations_page.visit()
         self.assertEqual(len(self.group_configurations_page.content_groups), 0)
 
     def test_must_supply_name(self):
@@ -165,7 +165,7 @@ class ContentGroupConfigurationTest(StudioCourseTest):
 
         # Waiting for the page load and verify that we've landed on course outline page
         EmptyPromise(
-            lambda: self.outline_page.is_browser_on_page(), "loaded page {!r}".format(self.outline_page),
+            self.outline_page.is_browser_on_page(), "loaded page {!r}".format(self.outline_page),
             timeout=30
         ).fulfill()
 

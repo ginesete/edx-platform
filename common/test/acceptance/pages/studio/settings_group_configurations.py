@@ -168,6 +168,9 @@ class GroupConfiguration(object):
 
     @property
     def delete_button_is_present(self):
+        """
+        Returns whether or not the delete icon is present.
+        """
         return self.find_css('.actions .delete').present
 
     def delete(self):

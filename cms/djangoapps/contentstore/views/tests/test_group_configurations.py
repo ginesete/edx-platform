@@ -598,6 +598,9 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
         super(GroupConfigurationsUsageInfoTestCase, self).setUp()
 
     def _get_expected_content_group(self, usage_for_group):
+        """
+        Returns the expected configuration with particular usage.
+        """
         return {
             'id': 0,
             'name': 'Name 0',
@@ -630,13 +633,13 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
         )
 
         actual = GroupConfiguration.get_or_create_content_group(self.store, self.course)
-        expected = self._get_expected_content_group(usage_for_group=
-                                                    [
-                                                        {
-                                                            'url': u"/container/{}".format(vertical.location),
-                                                            'label': u"Test Unit 0 / Test Problem 0JOSÉ ANDRÉS"
-                                                        }
-                                                    ]
+        expected = self._get_expected_content_group(
+            usage_for_group=[
+                {
+                    'url': u"/container/{}".format(vertical.location),
+                    'label': u"Test Unit 0 / Test Problem 0JOSÉ ANDRÉS"
+                }
+            ]
         )
 
         self.assertEqual(actual, expected)
@@ -656,7 +659,6 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
                 'label': 'Test Unit 0 / Test Problem 0'
             }
         ])
-        self.maxDiff = None
 
         self.assertEqual(actual, expected)
 
@@ -671,18 +673,16 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
 
         actual = GroupConfiguration.get_or_create_content_group(self.store, self.course)
 
-        expected = self._get_expected_content_group(usage_for_group=
-                                                    [
-                        {
-                            'url': '/container/{}'.format(vertical.location),
-                            'label': 'Test Unit 0 / Test Problem 0'
-                        },
-                        {
-                            'url': '/container/{}'.format(vertical1.location),
-                            'label': 'Test Unit 1 / Test Problem 1'
-                        }
-                    ]
-        )
+        expected = self._get_expected_content_group(usage_for_group=[
+            {
+                'url': '/container/{}'.format(vertical.location),
+                'label': 'Test Unit 0 / Test Problem 0'
+            },
+            {
+                'url': '/container/{}'.format(vertical1.location),
+                'label': 'Test Unit 1 / Test Problem 1'
+            }
+        ])
 
         self.assertEqual(actual, expected)
 
@@ -811,7 +811,6 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
                 'validation': None,
             }],
         }]
-        self.maxDiff = None
         self.assertEqual(actual, expected)
 
     def test_can_handle_without_parent(self):

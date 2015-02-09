@@ -41,6 +41,12 @@ define([
         note: '.wrapper-delete-button'
     };
 
+    var assertTheDetailsView = function (text) {
+        expect(this.view.$el).toContainText(text);
+        expect(this.view.$el).toContainText('ID: 0');
+        expect(this.view.$('.delete')).toExist();
+    };
+
     beforeEach(function() {
         window.course = new Course({
             id: '5',
@@ -108,9 +114,7 @@ define([
         });
 
         it('should render properly', function() {
-            expect(this.view.$el).toContainText('Configuration');
-            expect(this.view.$el).toContainText('ID: 0');
-            expect(this.view.$('.delete')).toExist();
+            assertTheDetailsView('Configuration');
         });
 
         it('should show groups appropriately', function() {
@@ -867,9 +871,7 @@ define([
         });
 
         it('should render properly', function() {
-            expect(this.view.$el).toContainText('Content Group');
-            expect(this.view.$el).toContainText('ID: 0');
-            expect(this.view.$('.delete')).toExist();
+            assertTheDetailsView('Content Group');
         });
 
         it('should show empty usage appropriately', function() {
@@ -1051,7 +1053,7 @@ define([
             this.model.set('usage', [ {'label': 'label1', 'url': 'url1'} ]);
             this.view.render();
             expect(this.view.$(SELECTORS.warningMessage)).toContainText(
-                'This content group is currently used in different unit(s).'
+                'This content group is used in one or more units.'
             );
             expect(this.view.$(SELECTORS.warningIcon)).toExist();
         });
@@ -1078,7 +1080,7 @@ define([
                 name: 'Content Group Configuration',
                 id: 0,
                 scheme:'cohort',
-                groups: new GroupCollection([this.model]),
+                groups: new GroupCollection([this.model])
             });
             this.saveableModel.urlRoot = '/group_configurations';
             this.collection = new GroupConfigurationCollection([ this.saveableModel ]);
@@ -1097,7 +1099,7 @@ define([
         };
 
         it('should render properly', function() {
-            var contentGroupDeatilsSel = '.content-group-details'
+            var contentGroupDeatilsSel = '.content-group-details';
             // Details view by default
             expect(this.view.$(contentGroupDeatilsSel)).toExist();
             this.view.$('.action-edit .edit').click();
