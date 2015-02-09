@@ -46,6 +46,52 @@ define([
         expect(view.$el).toContainText('ID: 0');
         expect(view.$('.delete')).toExist();
     };
+    var assertShowEmptyUsages = function (view, usageText) {
+        expect(view.$(SELECTORS.usageCount)).not.toExist();
+        expect(view.$(SELECTORS.usageText)).toContainText(usageText);
+        expect(view.$(SELECTORS.usageTextAnchor)).toExist();
+        expect(view.$(SELECTORS.usageUnit)).not.toExist();
+    };
+    var assertHideEmptyUsages = function (view) {
+        expect(view.$(SELECTORS.usageText)).not.toExist();
+        expect(view.$(SELECTORS.usageUnit)).not.toExist();
+        expect(view.$(SELECTORS.usageCount)).toContainText('Not in Use');
+    };
+    var assertShowNonEmptyUsages = function (view, usageText, toolTipText) {
+        var usageUnitAnchors = view.$(SELECTORS.usageUnitAnchor);
+
+        expect(view.$(SELECTORS.note)).toHaveAttr(
+            'data-tooltip', toolTipText
+        );
+        expect(view.$('.delete')).toHaveClass('is-disabled');
+        expect(view.$(SELECTORS.usageCount)).not.toExist();
+        expect(view.$(SELECTORS.usageText)).toContainText(usageText);
+        expect(view.$(SELECTORS.usageUnit).length).toBe(2);
+        expect(usageUnitAnchors.length).toBe(2);
+        expect(usageUnitAnchors.eq(0)).toContainText('label1');
+        expect(usageUnitAnchors.eq(0).attr('href')).toBe('url1');
+        expect(usageUnitAnchors.eq(1)).toContainText('label2');
+        expect(usageUnitAnchors.eq(1).attr('href')).toBe('url2');
+    };
+    var assertHideNonEmptyUsages = function (view) {
+        expect(view.$('.delete')).toHaveClass('is-disabled');
+        expect(view.$(SELECTORS.usageText)).not.toExist();
+        expect(view.$(SELECTORS.usageUnit)).not.toExist();
+        expect(view.$(SELECTORS.usageCount)).toContainText('Used in 2 units');
+    };
+    var setUsageInfo = function (model) {
+        model.set('usage', [
+            {'label': 'label1', 'url': 'url1'},
+            {'label': 'label2', 'url': 'url2'}
+        ]);
+    };
+    var assertHideValidationContent = function (view) {
+        expect(view.$(SELECTORS.usageUnitMessage)).not.toExist();
+        expect(view.$(SELECTORS.usageUnitWarningIcon)).not.toExist();
+        expect(view.$(SELECTORS.usageUnitErrorIcon)).not.toExist();
+    };
+
+
 
     beforeEach(function() {
         window.course = new Course({
@@ -147,69 +193,38 @@ define([
         it('should show empty usage appropriately', function() {
             this.model.set('showGroups', false);
             this.view.$('.show-groups').click();
-
-            expect(this.view.$(SELECTORS.usageCount)).not.toExist();
-            expect(this.view.$(SELECTORS.usageText))
-                .toContainText('This Group Configuration is not in use. ' +
+            assertShowEmptyUsages(this.view, 'This Group Configuration is not in use. ' +
                                'Start by adding a content experiment to any ' +
                                'Unit via the');
-            expect(this.view.$(SELECTORS.usageTextAnchor)).toExist();
-            expect(this.view.$(SELECTORS.usageUnit)).not.toExist();
         });
 
         it('should hide empty usage appropriately', function() {
             this.model.set('showGroups', true);
             this.view.$('.hide-groups').click();
-
-            expect(this.view.$(SELECTORS.usageText)).not.toExist();
-            expect(this.view.$(SELECTORS.usageUnit)).not.toExist();
-            expect(this.view.$(SELECTORS.usageCount))
-                .toContainText('Not in Use');
+            assertHideEmptyUsages(this.view)
         });
 
         it('should show non-empty usage appropriately', function() {
-            var usageUnitAnchors;
-
-            this.model.set('usage', [
-                {'label': 'label1', 'url': 'url1'},
-                {'label': 'label2', 'url': 'url2'}
-            ]);
+            setUsageInfo(this.model);
             this.model.set('showGroups', false);
             this.view.$('.show-groups').click();
 
-            usageUnitAnchors = this.view.$(SELECTORS.usageUnitAnchor);
-
-            expect(this.view.$(SELECTORS.note)).toHaveAttr(
-                'data-tooltip', 'Cannot delete when in use by an experiment'
-            );
-            expect(this.view.$('.delete')).toHaveClass('is-disabled');
-            expect(this.view.$(SELECTORS.usageCount)).not.toExist();
-            expect(this.view.$(SELECTORS.usageText))
-                .toContainText('This Group Configuration is used in:');
-            expect(this.view.$(SELECTORS.usageUnit).length).toBe(2);
-            expect(usageUnitAnchors.length).toBe(2);
-            expect(usageUnitAnchors.eq(0)).toContainText('label1');
-            expect(usageUnitAnchors.eq(0).attr('href')).toBe('url1');
-            expect(usageUnitAnchors.eq(1)).toContainText('label2');
-            expect(usageUnitAnchors.eq(1).attr('href')).toBe('url2');
+            assertShowNonEmptyUsages(
+                this.view,
+                'This Group Configuration is used in:',
+                'Cannot delete when in use by an experiment'
+            )
         });
 
         it('should hide non-empty usage appropriately', function() {
-            this.model.set('usage', [
-                {'label': 'label1', 'url': 'url1'},
-                {'label': 'label2', 'url': 'url2'}
-            ]);
+            setUsageInfo(this.model);
             this.model.set('showGroups', true);
             this.view.$('.hide-groups').click();
 
             expect(this.view.$(SELECTORS.note)).toHaveAttr(
                 'data-tooltip', 'Cannot delete when in use by an experiment'
             );
-            expect(this.view.$('.delete')).toHaveClass('is-disabled');
-            expect(this.view.$(SELECTORS.usageText)).not.toExist();
-            expect(this.view.$(SELECTORS.usageUnit)).not.toExist();
-            expect(this.view.$(SELECTORS.usageCount))
-                .toContainText('Used in 2 units');
+            assertHideNonEmptyUsages(this.view);
         });
 
         it('should show validation warning icon and message appropriately', function() {
@@ -249,16 +264,11 @@ define([
         });
 
         it('should hide validation icons and messages appropriately', function() {
-            this.model.set('usage', [
-                {'label': 'label1', 'url': 'url1'},
-                {'label': 'label2', 'url': 'url2'}
-            ]);
+            setUsageInfo(this.model);
             this.model.set('showGroups', true);
             this.view.$('.hide-groups').click();
 
-            expect(this.view.$(SELECTORS.usageUnitMessage)).not.toExist();
-            expect(this.view.$(SELECTORS.usageUnitWarningIcon)).not.toExist();
-            expect(this.view.$(SELECTORS.usageUnitErrorIcon)).not.toExist();
+            assertHideValidationContent(this.view);
         });
     });
 
@@ -877,82 +887,44 @@ define([
         it('should show empty usage appropriately', function() {
             this.model.set('showContentGroupUsages', false);
             this.view.$('.show-groups').click();
-
             expect(this.model.get('showContentGroupUsages')).toBeTruthy();
-            expect(this.view.$(SELECTORS.usageCount)).not.toExist();
-            expect(this.view.$(SELECTORS.usageText))
-                .toContainText('This content group is not in use. ');
-            expect(this.view.$(SELECTORS.usageTextAnchor)).toExist();
-            expect(this.view.$(SELECTORS.usageUnit)).not.toExist();
+            assertShowEmptyUsages(this.view, 'This content group is not in use. ');
         });
 
         it('should hide empty usage appropriately', function() {
             this.model.set('showContentGroupUsages', true);
             this.view.$('.hide-groups').click();
-
-            expect(this.view.$(SELECTORS.usageText)).not.toExist();
-            expect(this.view.$(SELECTORS.usageUnit)).not.toExist();
-            expect(this.view.$(SELECTORS.usageCount))
-                .toContainText('Not in Use');
+            assertHideEmptyUsages(this.view)
         });
 
         it('should show non-empty usage appropriately', function() {
-            var usageUnitAnchors;
-
-            this.model.set('usage', [
-                {'label': 'label1', 'url': 'url1'},
-                {'label': 'label2', 'url': 'url2'}
-            ]);
-
+            setUsageInfo(this.model);
             this.model.set('showContentGroupUsages', false);
             this.view.$('.show-groups').click();
 
-            usageUnitAnchors = this.view.$(SELECTORS.usageUnitAnchor);
-
-            expect(this.view.$('li.action-delete')).toHaveAttr(
-                'data-tooltip', 'Cannot delete when in use by a unit'
-            );
-            expect(this.view.$('.delete')).toHaveClass('is-disabled');
-            expect(this.view.$(SELECTORS.usageCount)).not.toExist();
-            expect(this.view.$(SELECTORS.usageText))
-                .toContainText('This content group is used in:');
-            expect(this.view.$(SELECTORS.usageUnit).length).toBe(2);
-            expect(usageUnitAnchors.length).toBe(2);
-            expect(usageUnitAnchors.eq(0)).toContainText('label1');
-            expect(usageUnitAnchors.eq(0).attr('href')).toBe('url1');
-            expect(usageUnitAnchors.eq(1)).toContainText('label2');
-            expect(usageUnitAnchors.eq(1).attr('href')).toBe('url2');
+            assertShowNonEmptyUsages(
+                this.view,
+                'This content group is used in:',
+                'Cannot delete when in use by a unit'
+            )
         });
 
         it('should hide non-empty usage appropriately', function() {
-            this.model.set('usage', [
-                {'label': 'label1', 'url': 'url1'},
-                {'label': 'label2', 'url': 'url2'}
-            ]);
+            setUsageInfo(this.model);
             this.model.set('showContentGroupUsages', true);
             this.view.$('.hide-groups').click();
 
             expect(this.view.$('li.action-delete')).toHaveAttr(
                 'data-tooltip', 'Cannot delete when in use by a unit'
             );
-            expect(this.view.$('.delete')).toHaveClass('is-disabled');
-            expect(this.view.$(SELECTORS.usageText)).not.toExist();
-            expect(this.view.$(SELECTORS.usageUnit)).not.toExist();
-            expect(this.view.$(SELECTORS.usageCount))
-                .toContainText('Used in 2 units');
+            assertHideNonEmptyUsages(this.view);
         });
 
         it('should hide validation icons and messages appropriately', function() {
-            this.model.set('usage', [
-                {'label': 'label1', 'url': 'url1'},
-                {'label': 'label2', 'url': 'url2'}
-            ]);
+            setUsageInfo(this.model);
             this.model.set('showContentGroupUsages', true);
             this.view.$('.hide-groups').click();
-
-            expect(this.view.$(SELECTORS.usageUnitMessage)).not.toExist();
-            expect(this.view.$(SELECTORS.usageUnitWarningIcon)).not.toExist();
-            expect(this.view.$(SELECTORS.usageUnitErrorIcon)).not.toExist();
+            assertHideValidationContent(this.view);
         });
     });
 
