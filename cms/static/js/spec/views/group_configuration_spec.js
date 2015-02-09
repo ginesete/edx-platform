@@ -896,21 +896,17 @@ define([
         });
 
         it('should show empty usage appropriately', function() {
-            this.model.set('showContentGroupUsages', false);
             this.view.$('.show-groups').click();
-            expect(this.model.get('showContentGroupUsages')).toBeTruthy();
             assertShowEmptyUsages(this.view, 'This content group is not in use. ');
         });
 
         it('should hide empty usage appropriately', function() {
-            this.model.set('showContentGroupUsages', true);
             this.view.$('.hide-groups').click();
             assertHideEmptyUsages(this.view)
         });
 
         it('should show non-empty usage appropriately', function() {
             setUsageInfo(this.model);
-            this.model.set('showContentGroupUsages', false);
             this.view.$('.show-groups').click();
 
             assertShowNonEmptyUsages(
@@ -922,7 +918,6 @@ define([
 
         it('should hide non-empty usage appropriately', function() {
             setUsageInfo(this.model);
-            this.model.set('showContentGroupUsages', true);
             this.view.$('.hide-groups').click();
 
             expect(this.view.$('li.action-delete')).toHaveAttr(
@@ -933,7 +928,6 @@ define([
 
         it('should hide validation icons and messages appropriately', function() {
             setUsageInfo(this.model);
-            this.model.set('showContentGroupUsages', true);
             this.view.$('.hide-groups').click();
             assertHideValidationContent(this.view);
         });
