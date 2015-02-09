@@ -9,7 +9,6 @@ define([
                 name: '',
                 version: 1,
                 order: null,
-                showContentGroupUsages: false,
                 usage: []
             };
         },

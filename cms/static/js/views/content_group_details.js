@@ -34,11 +34,12 @@ define([
             this.listenTo(this.model, 'change', this.render);
         },
 
-        render: function() {
+        render: function(showContentGroupUsages) {
            var attrs = $.extend({}, this.model.attributes, {
                 usageCountMessage: this.getUsageCountTitle(),
                 outlineAnchorMessage: this.getOutlineAnchorMessage(),
-                index: this.model.collection.indexOf(this.model)
+                index: this.model.collection.indexOf(this.model),
+                showContentGroupUsages: showContentGroupUsages || false
             });
             this.$el.html(this.template(attrs));
             return this;
@@ -46,12 +47,12 @@ define([
 
         showContentGroupUsages: function(event) {
             if (event && event.preventDefault) { event.preventDefault(); }
-            this.model.set('showContentGroupUsages', true);
+            this.render(true);
         },
 
         hideContentGroupUsages: function(event) {
             if (event && event.preventDefault) { event.preventDefault(); }
-            this.model.set('showContentGroupUsages', false);
+            this.render(false);
         },
 
         getUsageCountTitle: function () {
