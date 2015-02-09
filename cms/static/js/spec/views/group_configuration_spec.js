@@ -41,10 +41,10 @@ define([
         note: '.wrapper-delete-button'
     };
 
-    var assertTheDetailsView = function (text) {
-        expect(this.view.$el).toContainText(text);
-        expect(this.view.$el).toContainText('ID: 0');
-        expect(this.view.$('.delete')).toExist();
+    var assertTheDetailsView = function (view, text) {
+        expect(view.$el).toContainText(text);
+        expect(view.$el).toContainText('ID: 0');
+        expect(view.$('.delete')).toExist();
     };
 
     beforeEach(function() {
@@ -114,7 +114,7 @@ define([
         });
 
         it('should render properly', function() {
-            assertTheDetailsView('Configuration');
+            assertTheDetailsView(this.view, 'Configuration');
         });
 
         it('should show groups appropriately', function() {
@@ -871,7 +871,7 @@ define([
         });
 
         it('should render properly', function() {
-            assertTheDetailsView('Content Group');
+            assertTheDetailsView(this.view, 'Content Group');
         });
 
         it('should show empty usage appropriately', function() {

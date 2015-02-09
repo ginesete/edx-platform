@@ -92,6 +92,26 @@ class ContentGroupConfigurationTest(StudioCourseTest):
 
         self.assertIn("Updated Second Content Group", second_config.name)
 
+    def test_cannot_delete_used_content_group(self):
+        """
+        Scenario: Ensure that the user cannot delete used content group.
+        Given I have a course with 1 Content Group
+        And I go to the Group Configuration page
+        When I try to delete the Content Group with name "New Content Group"
+        Then I see the delete button is disabled.
+        """
+        self.group_configurations_page.create_first_content_group()
+        config = self.group_configurations_page.content_groups[0]
+        config.name = "New Content Group"
+        config.usage = [{'url': '/abc'}]
+        # Save the content group
+        self.assertEqual(config.get_text('.action-primary'), "Create")
+        self.assertFalse(config.delete_button_is_present)
+        config.save()
+
+        self.group_configurations_page.visit()
+        self.assertTrue(config.delete_button_is_disabled)
+
     def test_can_delete_unused_content_group(self):
         """
         Scenario: Ensure that the user can delete unused content group.
@@ -165,7 +185,7 @@ class ContentGroupConfigurationTest(StudioCourseTest):
 
         # Waiting for the page load and verify that we've landed on course outline page
         EmptyPromise(
-            self.outline_page.is_browser_on_page(), "loaded page {!r}".format(self.outline_page),
+            lambda: self.outline_page.is_browser_on_page(), "loaded page {!r}".format(self.outline_page),
             timeout=30
         ).fulfill()
 
