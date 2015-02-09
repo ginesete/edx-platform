@@ -90,7 +90,55 @@ define([
         expect(view.$(SELECTORS.usageUnitWarningIcon)).not.toExist();
         expect(view.$(SELECTORS.usageUnitErrorIcon)).not.toExist();
     };
+    var assertControllerView = function (view, detailsView, editView) {
+        // Details view by default
+        expect(view.$(detailsView)).toExist();
+        view.$('.action-edit .edit').click();
+        expect(view.$(editView)).toExist();
+        expect(view.$(detailsView)).not.toExist();
+        view.$('.action-cancel').click();
+        expect(view.$(detailsView)).toExist();
+        expect(view.$(editView)).not.toExist();
+    };
+    var clickDeleteItem = function (that, promptSpy, promptText) {
+        that.view.$('.delete').click();
+        ViewHelpers.verifyPromptShowing(promptSpy, promptText);
+        ViewHelpers.confirmPrompt(promptSpy);
+        ViewHelpers.verifyPromptHidden(promptSpy);
+    };
+    var assertAndDeleteItem = function (that, url, promptText) {
+        var requests = AjaxHelpers.requests(that),
+            promptSpy = ViewHelpers.createPromptSpy(),
+            notificationSpy = ViewHelpers.createNotificationSpy();
 
+        clickDeleteItem(that, promptSpy, promptText);
+
+        // Backbone.emulateHTTP is enabled in our system, so setting this
+        // option  will fake PUT, PATCH and DELETE requests with a HTTP POST,
+        // setting the X-HTTP-Method-Override header with the true method.
+        AjaxHelpers.expectJsonRequest(requests, 'POST', url);
+        expect(_.last(requests).requestHeaders['X-HTTP-Method-Override']).toBe('DELETE');
+        ViewHelpers.verifyNotificationShowing(notificationSpy, /Deleting/);
+
+        AjaxHelpers.respondToDelete(requests);
+        ViewHelpers.verifyNotificationHidden(notificationSpy);
+        expect($(SELECTORS.itemView)).not.toExist();
+    };
+    var assertAndDeleteItemWithError = function (that, url, listItemView, promptText) {
+        var requests = AjaxHelpers.requests(that),
+            promptSpy = ViewHelpers.createPromptSpy(),
+            notificationSpy = ViewHelpers.createNotificationSpy();
+
+        clickDeleteItem(that, promptSpy, promptText);
+
+        AjaxHelpers.expectJsonRequest(requests, 'POST', url);
+        expect(_.last(requests).requestHeaders['X-HTTP-Method-Override']).toBe('DELETE');
+        ViewHelpers.verifyNotificationShowing(notificationSpy, /Deleting/);
+
+        AjaxHelpers.respondWithError(requests);
+        ViewHelpers.verifyNotificationShowing(notificationSpy, /Deleting/);
+        expect($(listItemView)).toExist();
+    };
 
 
     beforeEach(function() {
@@ -550,7 +598,6 @@ define([
     });
 
     describe('Experiment group configurations controller view', function() {
-        var clickDeleteItem;
 
         beforeEach(function() {
             TemplateHelpers.installTemplates([
@@ -565,58 +612,22 @@ define([
             appendSetFixtures(this.view.render().el);
         });
 
-        clickDeleteItem = function (view, promptSpy) {
-            view.$('.delete').click();
-            ViewHelpers.verifyPromptShowing(promptSpy, /Delete this group configuration/);
-            ViewHelpers.confirmPrompt(promptSpy);
-            ViewHelpers.verifyPromptHidden(promptSpy);
-        };
-
         it('should render properly', function() {
-            // Details view by default
-            expect(this.view.$(SELECTORS.detailsView)).toExist();
-            this.view.$('.action-edit .edit').click();
-            expect(this.view.$(SELECTORS.editView)).toExist();
-            expect(this.view.$(SELECTORS.detailsView)).not.toExist();
-            this.view.$('.action-cancel').click();
-            expect(this.view.$(SELECTORS.detailsView)).toExist();
-            expect(this.view.$(SELECTORS.editView)).not.toExist();
+            assertControllerView(this.view, SELECTORS.detailsView, SELECTORS.editView);
         });
 
         it('should destroy itself on confirmation of deleting', function () {
-            var requests = AjaxHelpers.requests(this),
-                promptSpy = ViewHelpers.createPromptSpy(),
-                notificationSpy = ViewHelpers.createNotificationSpy();
-
-            clickDeleteItem(this.view, promptSpy);
-            // Backbone.emulateHTTP is enabled in our system, so setting this
-            // option  will fake PUT, PATCH and DELETE requests with a HTTP POST,
-            // setting the X-HTTP-Method-Override header with the true method.
-            AjaxHelpers.expectJsonRequest(requests, 'POST', '/group_configurations/0');
-            expect(_.last(requests).requestHeaders['X-HTTP-Method-Override']).toBe('DELETE');
-            ViewHelpers.verifyNotificationShowing(notificationSpy, /Deleting/);
-            AjaxHelpers.respondToDelete(requests);
-            ViewHelpers.verifyNotificationHidden(notificationSpy);
-            expect($(SELECTORS.itemView)).not.toExist();
+            assertAndDeleteItem(this, '/group_configurations/0', 'Delete this group configuration?');
         });
 
         it('does not hide deleting message if failure', function() {
-            var requests = AjaxHelpers.requests(this),
-                promptSpy = ViewHelpers.createPromptSpy(),
-                notificationSpy = ViewHelpers.createNotificationSpy();
-
-            clickDeleteItem(this.view, promptSpy);
-            // Backbone.emulateHTTP is enabled in our system, so setting this
-            // option  will fake PUT, PATCH and DELETE requests with a HTTP POST,
-            // setting the X-HTTP-Method-Override header with the true method.
-            AjaxHelpers.expectJsonRequest(requests, 'POST', '/group_configurations/0');
-            expect(_.last(requests).requestHeaders['X-HTTP-Method-Override']).toBe('DELETE');
-            ViewHelpers.verifyNotificationShowing(notificationSpy, /Deleting/);
-            AjaxHelpers.respondWithError(requests);
-            ViewHelpers.verifyNotificationShowing(notificationSpy, /Deleting/);
-            expect($(SELECTORS.itemView)).toExist();
+            assertAndDeleteItemWithError(
+                this,
+                '/group_configurations/0',
+                SELECTORS.itemView,
+                'Delete this group configuration?'
+            );
         });
-    });
 
     describe('Experiment group configurations group editor view', function() {
         beforeEach(function() {
@@ -1039,8 +1050,6 @@ define([
     });
 
     describe('Content group controller view', function() {
-        var clickDeleteItem;
-
         beforeEach(function() {
             TemplateHelpers.installTemplates([
                 'content-group-editor', 'content-group-details'
@@ -1063,58 +1072,23 @@ define([
             appendSetFixtures(this.view.render().el);
         });
 
-        clickDeleteItem = function (view, promptSpy) {
-            view.$('.delete').click();
-            ViewHelpers.verifyPromptShowing(promptSpy, /Delete this content group/);
-            ViewHelpers.confirmPrompt(promptSpy);
-            ViewHelpers.verifyPromptHidden(promptSpy);
-        };
-
         it('should render properly', function() {
-            var contentGroupDeatilsSel = '.content-group-details';
-            // Details view by default
-            expect(this.view.$(contentGroupDeatilsSel)).toExist();
-            this.view.$('.action-edit .edit').click();
-            expect(this.view.$('.content-group-edit')).toExist();
-            expect(this.view.$()).not.toExist();
-            this.view.$('.action-cancel').click();
-            expect(this.view.$(contentGroupDeatilsSel)).toExist();
-            expect(this.view.$(SELECTORS.editView)).not.toExist();
+            assertControllerView(this.view, '.content-group-details', '.content-group-edit');
         });
 
         it('should destroy itself on confirmation of deleting', function () {
-            var requests = AjaxHelpers.requests(this),
-                promptSpy = ViewHelpers.createPromptSpy(),
-                notificationSpy = ViewHelpers.createNotificationSpy();
-
-            clickDeleteItem(this.view, promptSpy);
-            // Backbone.emulateHTTP is enabled in our system, so setting this
-            // option  will fake PUT, PATCH and DELETE requests with a HTTP POST,
-            // setting the X-HTTP-Method-Override header with the true method.
-            AjaxHelpers.expectJsonRequest(requests, 'POST', '/group_configurations/0/0');
-            expect(_.last(requests).requestHeaders['X-HTTP-Method-Override']).toBe('DELETE');
-            ViewHelpers.verifyNotificationShowing(notificationSpy, /Deleting/);
-            AjaxHelpers.respondToDelete(requests);
-            ViewHelpers.verifyNotificationHidden(notificationSpy);
-            expect($('.content-groups-list-item')).not.toExist();
+            assertAndDeleteItem(this, '/group_configurations/0/0', 'Delete this content group');
         });
 
         it('does not hide deleting message if failure', function() {
-            var requests = AjaxHelpers.requests(this),
-                promptSpy = ViewHelpers.createPromptSpy(),
-                notificationSpy = ViewHelpers.createNotificationSpy();
-
-            clickDeleteItem(this.view, promptSpy);
-            // Backbone.emulateHTTP is enabled in our system, so setting this
-            // option  will fake PUT, PATCH and DELETE requests with a HTTP POST,
-            // setting the X-HTTP-Method-Override header with the true method.
-            AjaxHelpers.expectJsonRequest(requests, 'POST', '/group_configurations/0/0');
-            expect(_.last(requests).requestHeaders['X-HTTP-Method-Override']).toBe('DELETE');
-            ViewHelpers.verifyNotificationShowing(notificationSpy, /Deleting/);
-            AjaxHelpers.respondWithError(requests);
-            ViewHelpers.verifyNotificationShowing(notificationSpy, /Deleting/);
-            expect($('.content-groups-list-item')).toExist();
+            assertAndDeleteItemWithError(
+                this,
+                '/group_configurations/0/0',
+                '.content-groups-list-item',
+                'Delete this content group'
+            );
         });
     });
 
+    });
 });
