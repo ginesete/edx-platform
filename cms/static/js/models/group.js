@@ -14,7 +14,8 @@ define([
             };
         },
         url : function() {
-            return this.collection.parents[0].urlRoot + '/' + encodeURIComponent(this.collection.parents[0].id) + '/' + encodeURIComponent(this.id);
+            var parentModel = this.collection.parents[0];
+            return parentModel.urlRoot + '/' + encodeURIComponent(parentModel.id) + '/' + encodeURIComponent(this.id);
         },
 
         reset: function() {

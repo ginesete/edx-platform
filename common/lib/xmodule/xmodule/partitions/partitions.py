@@ -104,6 +104,9 @@ class UserPartition(namedtuple("UserPartition", "id name description groups sche
     # The default scheme to be used when upgrading version 1 partitions.
     VERSION_1_SCHEME = "random"
 
+    RANDOM_SCHEME = "random"
+    COHORT_SCHEME = "cohort"
+
     def __new__(cls, id, name, description, groups, scheme=None, scheme_id=VERSION_1_SCHEME):
         # pylint: disable=super-on-old-class
         if not scheme:

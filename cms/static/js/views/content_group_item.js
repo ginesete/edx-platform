@@ -20,7 +20,6 @@ define([
 
         canDelete: true,
 
-        // Translators: this refers to a collection of groups.
         itemDisplayName: gettext('content group'),
 
         attributes: function () {

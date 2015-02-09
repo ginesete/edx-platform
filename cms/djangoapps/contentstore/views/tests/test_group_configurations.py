@@ -597,13 +597,8 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
     def setUp(self):
         super(GroupConfigurationsUsageInfoTestCase, self).setUp()
 
-    def test_content_group_not_used(self):
-        """
-        Test that right data structure will be created if content group is not used.
-        """
-        self._add_user_partitions(scheme_id='cohort')
-        actual = GroupConfiguration.get_or_create_content_group_configuration_with_usage(self.store, self.course)
-        expected = {
+    def _get_expected_content_group(self, usage_for_group):
+        return {
             'id': 0,
             'name': 'Name 0',
             'scheme': 'cohort',
@@ -611,10 +606,18 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
             'version': UserPartition.VERSION,
             'groups': [
                 {'id': 0, 'name': 'Group A', 'version': 1, 'usage': []},
-                {'id': 1, 'name': 'Group B', 'version': 1, 'usage': []},
+                {'id': 1, 'name': 'Group B', 'version': 1, 'usage': usage_for_group},
                 {'id': 2, 'name': 'Group C', 'version': 1, 'usage': []},
             ],
         }
+
+    def test_content_group_not_used(self):
+        """
+        Test that right data structure will be created if content group is not used.
+        """
+        self._add_user_partitions(scheme_id='cohort')
+        actual = GroupConfiguration.get_or_create_content_group(self.store, self.course)
+        expected = self._get_expected_content_group(usage_for_group=[])
         self.assertEqual(actual, expected)
 
     def test_can_get_correct_usage_info_when_special_characters_are_in_content(self):
@@ -626,31 +629,16 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
             cid=0, group_id=1, name_suffix='0', special_characters=u"JOSÉ ANDRÉS"
         )
 
-        actual = GroupConfiguration.get_or_create_content_group_configuration_with_usage(self.store, self.course)
-        expected = {
-            'id': 0,
-            'name': "Name 0",
-            'scheme': 'cohort',
-            'description': 'Description 0',
-            'version': UserPartition.VERSION,
-            'groups': [
-                {
-                    'id': 0, 'name': 'Group A', 'version': 1, 'usage': []
-                },
-                {
-                    'id': 1, 'name': 'Group B', 'version': 1,
-                    'usage': [
-                        {
-                            'url': u"/container/{}".format(vertical.location),
-                            'label': u"Test Unit 0 / Test Problem 0JOSÉ ANDRÉS"
-                        }
-                    ]
-                },
-                {
-                    'id': 2, 'name': 'Group C', 'version': 1, 'usage': []
-                },
-            ],
-        }
+        actual = GroupConfiguration.get_or_create_content_group(self.store, self.course)
+        expected = self._get_expected_content_group(usage_for_group=
+                                                    [
+                                                        {
+                                                            'url': u"/container/{}".format(vertical.location),
+                                                            'label': u"Test Unit 0 / Test Problem 0JOSÉ ANDRÉS"
+                                                        }
+                                                    ]
+        )
+
         self.assertEqual(actual, expected)
 
     def test_can_get_correct_usage_info_for_content_groups(self):
@@ -660,32 +648,16 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
         self._add_user_partitions(count=1, scheme_id='cohort')
         vertical, __ = self._create_problem_with_content_group(cid=0, group_id=1, name_suffix='0')
 
-        actual = GroupConfiguration.get_or_create_content_group_configuration_with_usage(self.store, self.course)
+        actual = GroupConfiguration.get_or_create_content_group(self.store, self.course)
 
-        expected = {
-            'id': 0,
-            'name': 'Name 0',
-            'scheme': 'cohort',
-            'description': 'Description 0',
-            'version': UserPartition.VERSION,
-            'groups': [
-                {
-                    'id': 0, 'name': 'Group A', 'version': 1, 'usage': []
-                },
-                {
-                    'id': 1, 'name': 'Group B', 'version': 1,
-                    'usage': [
-                        {
-                            'url': '/container/{}'.format(vertical.location),
-                            'label': 'Test Unit 0 / Test Problem 0'
-                        }
-                    ]
-                },
-                {
-                    'id': 2, 'name': 'Group C', 'version': 1, 'usage': []
-                },
-            ],
-        }
+        expected = self._get_expected_content_group(usage_for_group=[
+            {
+                'url': '/container/{}'.format(vertical.location),
+                'label': 'Test Unit 0 / Test Problem 0'
+            }
+        ])
+        self.maxDiff = None
+
         self.assertEqual(actual, expected)
 
     def test_can_use_one_content_group_in_multiple_problems(self):
@@ -697,21 +669,10 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
         vertical, __ = self._create_problem_with_content_group(cid=0, group_id=1, name_suffix='0')
         vertical1, __ = self._create_problem_with_content_group(cid=0, group_id=1, name_suffix='1')
 
-        actual = GroupConfiguration.get_or_create_content_group_configuration_with_usage(self.store, self.course)
+        actual = GroupConfiguration.get_or_create_content_group(self.store, self.course)
 
-        expected = {
-            'id': 0,
-            'name': 'Name 0',
-            'scheme': 'cohort',
-            'description': 'Description 0',
-            'version': UserPartition.VERSION,
-            'groups': [
-                {
-                    'id': 0, 'name': 'Group A', 'version': 1, 'usage': []
-                },
-                {
-                    'id': 1, 'name': 'Group B', 'version': 1,
-                    'usage': [
+        expected = self._get_expected_content_group(usage_for_group=
+                                                    [
                         {
                             'url': '/container/{}'.format(vertical.location),
                             'label': 'Test Unit 0 / Test Problem 0'
@@ -721,12 +682,8 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
                             'label': 'Test Unit 1 / Test Problem 1'
                         }
                     ]
-                },
-                {
-                    'id': 2, 'name': 'Group C', 'version': 1, 'usage': []
-                },
-            ],
-        }
+        )
+
         self.assertEqual(actual, expected)
 
     def test_group_configuration_not_used(self):
@@ -734,7 +691,7 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
         Test that right data structure will be created if group configuration is not used.
         """
         self._add_user_partitions()
-        actual = GroupConfiguration.get_split_test_partitions_with_usage(self.course, self.store)
+        actual = GroupConfiguration.get_split_test_partitions_with_usage(self.store, self.course)
         expected = [{
             'id': 0,
             'name': 'Name 0',
@@ -758,7 +715,7 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
         vertical, __ = self._create_content_experiment(cid=0, name_suffix='0')
         self._create_content_experiment(name_suffix='1')
 
-        actual = GroupConfiguration.get_split_test_partitions_with_usage(self.course, self.store)
+        actual = GroupConfiguration.get_split_test_partitions_with_usage(self.store, self.course)
 
         expected = [{
             'id': 0,
@@ -831,7 +788,7 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
         vertical, __ = self._create_content_experiment(cid=0, name_suffix='0')
         vertical1, __ = self._create_content_experiment(cid=0, name_suffix='1')
 
-        actual = GroupConfiguration.get_split_test_partitions_with_usage(self.course, self.store)
+        actual = GroupConfiguration.get_split_test_partitions_with_usage(self.store, self.course)
 
         expected = [{
             'id': 0,
@@ -854,6 +811,7 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
                 'validation': None,
             }],
         }]
+        self.maxDiff = None
         self.assertEqual(actual, expected)
 
     def test_can_handle_without_parent(self):
@@ -872,7 +830,7 @@ class GroupConfigurationsUsageInfoTestCase(CourseTestCase, HelperMethods):
             modulestore().update_item(orphan, ModuleStoreEnum.UserID.test)
 
         self.save_course()
-        actual = GroupConfiguration.get_usage_info(self.course, self.store)
+        actual = GroupConfiguration.get_content_experiment_usage_info(self.store, self.course)
         self.assertEqual(actual, {0: []})
 
 
@@ -895,7 +853,7 @@ class GroupConfigurationsValidationTestCase(CourseTestCase, HelperMethods):
         validation.add(mocked_message)
         mocked_validation_messages.return_value = validation
 
-        group_configuration = GroupConfiguration.get_split_test_partitions_with_usage(self.course, self.store)[0]
+        group_configuration = GroupConfiguration.get_split_test_partitions_with_usage(self.store, self.course)[0]
         self.assertEqual(expected_result.to_json(), group_configuration['usage'][0]['validation'])
 
     def test_error_message_present(self):
