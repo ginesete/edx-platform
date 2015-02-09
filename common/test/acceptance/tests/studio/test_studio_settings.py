@@ -101,13 +101,15 @@ class ContentGroupConfigurationTest(StudioCourseTest):
         Then I see the delete button is disabled.
         """
         self.group_configurations_page.create_first_content_group()
+        name = "New Content Group"
         config = self.group_configurations_page.content_groups[0]
-        config.name = "New Content Group"
+        config.name = name
         config.usage = [{'url': '/abc'}]
         # Save the content group
         self.assertEqual(config.get_text('.action-primary'), "Create")
         self.assertFalse(config.delete_button_is_present)
         config.save()
+        self.assertIn(name, config.name)
 
         self.group_configurations_page.visit()
         self.assertTrue(config.delete_button_is_disabled)
