@@ -134,7 +134,6 @@ class ContentGroupConfigurationTest(StudioCourseTest):
         When I try to delete the Content Group with name "New Content Group"
         Then I see the delete button is disabled.
         """
-
         self.course_fixture._update_xblock(self.course_fixture._course_location, {
             "metadata": {
                 u"user_partitions": [
@@ -150,8 +149,8 @@ class ContentGroupConfigurationTest(StudioCourseTest):
         })
 
         self.group_configurations_page.visit()
-        config = self.create_and_verify_content_group("alpha", 0)
-
+        # config = self.create_and_verify_content_group("alpha", 0)
+        config = self.group_configurations_page.content_groups[0]
         self.group_configurations_page.visit()
         self.assertTrue(config.delete_button_is_disabled)
 
