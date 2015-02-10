@@ -269,9 +269,11 @@ define([
         it('should show empty usage appropriately', function() {
             this.model.set('showGroups', false);
             this.view.$('.show-groups').click();
-            assertShowEmptyUsages(this.view, 'This Group Configuration is not in use. ' +
-                               'Start by adding a content experiment to any ' +
-                               'Unit via the');
+            assertShowEmptyUsages(
+                this.view,
+                'This Group Configuration is not in use. ' +
+                'Start by adding a content experiment to any Unit via the'
+            );
         });
 
         it('should hide empty usage appropriately', function() {

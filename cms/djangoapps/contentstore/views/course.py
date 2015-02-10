@@ -1396,7 +1396,7 @@ class GroupConfiguration(object):
         return UserPartition.from_json(self.configuration)
 
     @staticmethod
-    def _get_usage_info(course, unit, problem, usage_info, group_id, scheme_name=UserPartition.COHORT_SCHEME):
+    def _get_usage_info(course, unit, item, usage_info, group_id, scheme_name=None):
         """
         Get usage info for unit/module.
         """
@@ -1405,9 +1405,9 @@ class GroupConfiguration(object):
             course.location.course_key.make_usage_key(unit.location.block_type, unit.location.name)
         )
 
-        usage_dict = {'label': u"{} / {}".format(unit.display_name, problem.display_name), 'url': unit_url}
+        usage_dict = {'label': u"{} / {}".format(unit.display_name, item.display_name), 'url': unit_url}
         if scheme_name == UserPartition.RANDOM_SCHEME:
-            validation_summary = problem.general_validation_message()
+            validation_summary = item.general_validation_message()
             usage_dict.update({'validation': validation_summary.to_json() if validation_summary else None})
 
         usage_info[group_id].append(usage_dict)
@@ -1469,7 +1469,7 @@ class GroupConfiguration(object):
             usage_info = GroupConfiguration._get_usage_info(
                 course=course,
                 unit=unit,
-                problem=split_test,
+                item=split_test,
                 usage_info=usage_info,
                 group_id=split_test.user_partition_id,
                 scheme_name=UserPartition.RANDOM_SCHEME
@@ -1481,12 +1481,12 @@ class GroupConfiguration(object):
         """
         Get usage information for content groups.
         """
-        modules = store.get_items(course.id, settings={'group_access': {'$exists': True}})
+        items = store.get_items(course.id, settings={'group_access': {'$exists': True}})
 
-        return GroupConfiguration._get_content_groups_usage_info(course, modules)
+        return GroupConfiguration._get_content_groups_usage_info(course, items)
 
     @staticmethod
-    def _get_content_groups_usage_info(course, modules):
+    def _get_content_groups_usage_info(course, items):
         """
         Returns all units names and their urls.
 
@@ -1505,22 +1505,22 @@ class GroupConfiguration(object):
         }
         """
         usage_info = {}
-        for problem in modules:
-            if hasattr(problem, 'group_access') and problem.group_access:
-                (__, group_ids), = problem.group_access.items()
+        for item in items:
+            if hasattr(item, 'group_access') and item.group_access:
+                (__, group_ids), = item.group_access.items()
                 for group_id in group_ids:
                     if group_id not in usage_info:
                         usage_info[group_id] = []
 
-                    unit = problem.get_parent()
+                    unit = item.get_parent()
                     if not unit:
-                        log.warning("Unable to find parent for component %s", problem.location)
+                        log.warning("Unable to find parent for component %s", item.location)
                         continue
 
                     usage_info = GroupConfiguration._get_usage_info(
                         course,
                         unit=unit,
-                        problem=problem,
+                        item=item,
                         usage_info=usage_info,
                         group_id=group_id
                     )
@@ -1736,11 +1736,11 @@ def group_configurations_detail_handler(request, course_key_string, group_config
                 return JsonResponse(status=404)
 
             return remove_content_or_experiment_group(
-                request,
-                store,
-                course,
-                configuration,
-                group_configuration_id,
+                request=request,
+                store=store,
+                course=course,
+                configuration=configuration,
+                group_configuration_id=group_configuration_id,
                 group_id=group_id
             )
 
