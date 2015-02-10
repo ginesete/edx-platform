@@ -106,19 +106,22 @@ define([
         ViewHelpers.confirmPrompt(promptSpy);
         ViewHelpers.verifyPromptHidden(promptSpy);
     };
-    var assertAndDeleteItem = function (that, url, promptText) {
-        var requests = AjaxHelpers.requests(that),
-            promptSpy = ViewHelpers.createPromptSpy(),
-            notificationSpy = ViewHelpers.createNotificationSpy();
-
-        clickDeleteItem(that, promptSpy, promptText);
-
+    var patchAndVerifyRequest = function (requests, url, notificationSpy) {
         // Backbone.emulateHTTP is enabled in our system, so setting this
         // option  will fake PUT, PATCH and DELETE requests with a HTTP POST,
         // setting the X-HTTP-Method-Override header with the true method.
         AjaxHelpers.expectJsonRequest(requests, 'POST', url);
         expect(_.last(requests).requestHeaders['X-HTTP-Method-Override']).toBe('DELETE');
         ViewHelpers.verifyNotificationShowing(notificationSpy, /Deleting/);
+    };
+    var assertAndDeleteItemError = function (that, url, promptText) {
+        var requests = AjaxHelpers.requests(that),
+            promptSpy = ViewHelpers.createPromptSpy(),
+            notificationSpy = ViewHelpers.createNotificationSpy();
+
+        clickDeleteItem(that, promptSpy, promptText);
+
+        patchAndVerifyRequest(requests, url, notificationSpy);
 
         AjaxHelpers.respondToDelete(requests);
         ViewHelpers.verifyNotificationHidden(notificationSpy);
@@ -130,14 +133,39 @@ define([
             notificationSpy = ViewHelpers.createNotificationSpy();
 
         clickDeleteItem(that, promptSpy, promptText);
-
-        AjaxHelpers.expectJsonRequest(requests, 'POST', url);
-        expect(_.last(requests).requestHeaders['X-HTTP-Method-Override']).toBe('DELETE');
-        ViewHelpers.verifyNotificationShowing(notificationSpy, /Deleting/);
+        patchAndVerifyRequest(requests, url, notificationSpy);
 
         AjaxHelpers.respondWithError(requests);
         ViewHelpers.verifyNotificationShowing(notificationSpy, /Deleting/);
         expect($(listItemView)).toExist();
+    };
+    var submitAndVerifyFormSuccess = function (view, requests, notificationSpy) {
+        view.$('form').submit();
+        ViewHelpers.verifyNotificationShowing(notificationSpy, /Saving/);
+        requests[0].respond(200);
+        ViewHelpers.verifyNotificationHidden(notificationSpy);
+    };
+    var submitAndVerifyFormError = function (view, requests, notificationSpy) {
+        view.$('form').submit();
+        ViewHelpers.verifyNotificationShowing(notificationSpy, /Saving/);
+        AjaxHelpers.respondWithError(requests);
+        ViewHelpers.verifyNotificationShowing(notificationSpy, /Saving/);
+    };
+    var assertCannotDeleteUsed = function (that, toolTipText, warningText){
+        setUsageInfo(that.model);
+        that.view.render();
+        expect(that.view.$(SELECTORS.note)).toHaveAttr(
+            'data-tooltip', toolTipText
+        );
+        expect(that.view.$(SELECTORS.warningMessage)).toContainText(warningText);
+        expect(that.view.$(SELECTORS.warningIcon)).toExist();
+        expect(that.view.$('.delete')).toHaveClass('is-disabled');
+    };
+    var assertUnusedOptions = function (that) {
+        that.model.set('usage', []);
+        that.view.render();
+        expect(that.view.$(SELECTORS.warningMessage)).not.toExist();
+        expect(that.view.$(SELECTORS.warningIcon)).not.toExist();
     };
 
 
@@ -375,10 +403,7 @@ define([
                 inputDescription: 'New Description'
             });
 
-            this.view.$('form').submit();
-            ViewHelpers.verifyNotificationShowing(notificationSpy, /Saving/);
-            requests[0].respond(200);
-            ViewHelpers.verifyNotificationHidden(notificationSpy);
+            submitAndVerifyFormSuccess(this.view, requests, notificationSpy);
 
             expect(this.model).toBeCorrectValuesInModel({
                 name: 'New Configuration',
@@ -396,10 +421,7 @@ define([
                 notificationSpy = ViewHelpers.createNotificationSpy();
 
             setValuesToInputs(this.view, { inputName: 'New Configuration' });
-            this.view.$('form').submit();
-            ViewHelpers.verifyNotificationShowing(notificationSpy, /Saving/);
-            AjaxHelpers.respondWithError(requests);
-            ViewHelpers.verifyNotificationShowing(notificationSpy, /Saving/);
+            submitAndVerifyFormError(this.view, requests, notificationSpy);
         });
 
         it('does not save on cancel', function() {
@@ -524,30 +546,17 @@ define([
         });
 
         it('cannot be deleted if it is in use', function () {
-            this.model.set('usage', [ {'label': 'label1', 'url': 'url1'} ]);
-            this.view.render();
-            expect(this.view.$(SELECTORS.note)).toHaveAttr(
-                'data-tooltip', 'Cannot delete when in use by an experiment'
-            );
-            expect(this.view.$('.delete')).toHaveClass('is-disabled');
-        });
-
-        it('contains warning message if it is in use', function () {
-            this.model.set('usage', [ {'label': 'label1', 'url': 'url1'} ]);
-            this.view.render();
-            expect(this.view.$(SELECTORS.warningMessage)).toContainText(
+            assertCannotDeleteUsed(
+                this,
+                'Cannot delete when in use by an experiment',
                 'This configuration is currently used in content ' +
                 'experiments. If you make changes to the groups, you may ' +
                 'need to edit those experiments.'
             );
-            expect(this.view.$(SELECTORS.warningIcon)).toExist();
         });
 
         it('does not contain warning message if it is not in use', function () {
-            this.model.set('usage', []);
-            this.view.render();
-            expect(this.view.$(SELECTORS.warningMessage)).not.toExist();
-            expect(this.view.$(SELECTORS.warningIcon)).not.toExist();
+           assertUnusedOptions(this);
         });
     });
 
@@ -617,7 +626,7 @@ define([
         });
 
         it('should destroy itself on confirmation of deleting', function () {
-            assertAndDeleteItem(this, '/group_configurations/0', 'Delete this group configuration?');
+            assertAndDeleteItemError(this, '/group_configurations/0', 'Delete this group configuration?');
         });
 
         it('does not hide deleting message if failure', function() {
@@ -628,6 +637,7 @@ define([
                 'Delete this group configuration?'
             );
         });
+    });
 
     describe('Experiment group configurations group editor view', function() {
         beforeEach(function() {
@@ -934,16 +944,6 @@ define([
     });
 
     describe('Content groups editor view', function() {
-        var setValuesToInputs;
-
-        setValuesToInputs = function (view, values) {
-
-            _.each(values, function (value, selector) {
-                if (SELECTORS[selector]) {
-                    view.$(SELECTORS[selector]).val(value);
-                }
-            });
-        };
 
         beforeEach(function() {
             ViewHelpers.installViewTemplates();
@@ -974,39 +974,28 @@ define([
                 notificationSpy = ViewHelpers.createNotificationSpy();
 
             this.view.$('.action-add').click();
-            setValuesToInputs(this.view, {
-                inputName: 'New Content Group',
-            });
+            this.view.$(SELECTORS.inputName).val('New Content Group');
 
-            this.view.$('form').submit();
-            ViewHelpers.verifyNotificationShowing(notificationSpy, /Saving/);
-            requests[0].respond(200);
-            ViewHelpers.verifyNotificationHidden(notificationSpy);
+            submitAndVerifyFormSuccess(this.view, requests, notificationSpy);
 
             expect(this.model).toBeCorrectValuesInModel({
                 name: 'New Content Group'
             });
-
             expect(this.view.$el).not.toExist();
         });
 
         it('does not hide saving message if failure', function() {
             var requests = AjaxHelpers.requests(this),
                 notificationSpy = ViewHelpers.createNotificationSpy();
+            this.view.$(SELECTORS.inputName).val('New Content Group')
 
-            setValuesToInputs(this.view, { inputName: 'New Content Group' });
-            this.view.$('form').submit();
-            ViewHelpers.verifyNotificationShowing(notificationSpy, /Saving/);
-            AjaxHelpers.respondWithError(requests);
-            ViewHelpers.verifyNotificationShowing(notificationSpy, /Saving/);
+            submitAndVerifyFormError(this.view, requests, notificationSpy)
         });
 
         it('does not save on cancel', function() {
             expect(this.view.$('.action-add'));
             this.view.$('.action-add').click();
-            setValuesToInputs(this.view, {
-                inputName: 'New Content Group',
-            });
+            this.view.$(SELECTORS.inputName).val('New Content Group');
 
             this.view.$('.action-cancel').click();
             expect(this.model).toBeCorrectValuesInModel({
@@ -1018,28 +1007,15 @@ define([
         });
 
         it('cannot be deleted if it is in use', function () {
-            this.model.set('usage', [ {'label': 'label1', 'url': 'url1'} ]);
-            this.view.render();
-            expect(this.view.$(SELECTORS.note)).toHaveAttr(
-                'data-tooltip', 'Cannot delete when in use by a unit'
-            );
-            expect(this.view.$('.delete')).toHaveClass('is-disabled');
-        });
-
-        it('contains warning message if it is in use', function () {
-            this.model.set('usage', [ {'label': 'label1', 'url': 'url1'} ]);
-            this.view.render();
-            expect(this.view.$(SELECTORS.warningMessage)).toContainText(
+            assertCannotDeleteUsed(
+                this,
+                'Cannot delete when in use by a unit',
                 'This content group is used in one or more units.'
             );
-            expect(this.view.$(SELECTORS.warningIcon)).toExist();
         });
 
         it('does not contain warning message if it is not in use', function () {
-            this.model.set('usage', []);
-            this.view.render();
-            expect(this.view.$(SELECTORS.warningMessage)).not.toExist();
-            expect(this.view.$(SELECTORS.warningIcon)).not.toExist();
+            assertUnusedOptions(this);
         });
     });
 
@@ -1071,7 +1047,7 @@ define([
         });
 
         it('should destroy itself on confirmation of deleting', function () {
-            assertAndDeleteItem(this, '/group_configurations/0/0', 'Delete this content group');
+            assertAndDeleteItemError(this, '/group_configurations/0/0', 'Delete this content group');
         });
 
         it('does not hide deleting message if failure', function() {
@@ -1082,7 +1058,5 @@ define([
                 'Delete this content group'
             );
         });
-    });
-
     });
 });
