@@ -6,9 +6,13 @@ from nose.plugins.attrib import attr
 
 from base_studio_test import StudioCourseTest
 from bok_choy.promise import EmptyPromise
+from ...fixtures.course import XBlockFixtureDesc
+from ..helpers import create_user_partition_json
 from ...pages.studio.overview import CourseOutlinePage
 from ...pages.studio.settings_advanced import AdvancedSettingsPage
 from ...pages.studio.settings_group_configurations import GroupConfigurationsPage
+from textwrap import dedent
+from xmodule.partitions.partitions import Group
 
 
 @attr('shard_1')
@@ -31,6 +35,36 @@ class ContentGroupConfigurationTest(StudioCourseTest):
             self.course_info['org'],
             self.course_info['number'],
             self.course_info['run']
+        )
+
+    def populate_course_fixture(self, course_fixture):
+        """
+        Populates test course with chapter, sequential, and 1 problems.
+        The problem is visible only to Group "alpha".
+        """
+        problem_data = dedent("""
+            <problem markdown="Simple Problem" max_attempts="" weight="">
+              <p>Choose Yes.</p>
+              <choiceresponse>
+                <checkboxgroup direction="vertical">
+                  <choice correct="true">Yes</choice>
+                </checkboxgroup>
+              </choiceresponse>
+            </problem>
+        """)
+
+        self.alpha_text = "VISIBLE TO ALPHA"
+
+        course_fixture.add_children(
+            XBlockFixtureDesc('chapter', 'Test Section').add_children(
+                XBlockFixtureDesc('sequential', 'Test Subsection').add_children(
+                    XBlockFixtureDesc('vertical', 'Test Unit').add_children(
+                        XBlockFixtureDesc(
+                            'problem', self.alpha_text, data=problem_data, metadata={"group_access": {0: [0]}}
+                        ),
+                    )
+                )
+            )
         )
 
     def create_and_verify_content_group(self, name, existing_groups):
@@ -100,17 +134,23 @@ class ContentGroupConfigurationTest(StudioCourseTest):
         When I try to delete the Content Group with name "New Content Group"
         Then I see the delete button is disabled.
         """
+
+        self.course_fixture._update_xblock(self.course_fixture._course_location, {
+            "metadata": {
+                u"user_partitions": [
+                    create_user_partition_json(
+                        0,
+                        'Configuration alpha,',
+                        'Content Group Partition',
+                        [Group("0", 'alpha')],
+                        scheme="cohort"
+                    )
+                ],
+            },
+        })
+
         self.group_configurations_page.visit()
-        self.group_configurations_page.create_first_content_group()
-        name = "New Content Group"
-        config = self.group_configurations_page.content_groups[0]
-        config.name = name
-        config.usage = [{'url': '/abc'}]
-        # Save the content group
-        self.assertEqual(config.get_text('.action-primary'), "Create")
-        self.assertFalse(config.delete_button_is_present)
-        config.save()
-        self.assertIn(name, config.name)
+        config = self.create_and_verify_content_group("alpha", 0)
 
         self.group_configurations_page.visit()
         self.assertTrue(config.delete_button_is_disabled)
