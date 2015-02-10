@@ -128,14 +128,12 @@ define([
                                 'version': 1,
                                 'order': 0,
                                 'name': 'Group 1',
-                                'usage': [],
-                                'showContentGroupUsages':false
+                                'usage': []
                             }, {
                                 'version': 1,
                                 'order': 1,
                                 'name': 'Group 2',
-                                'usage': [],
-                                'showContentGroupUsages':false
+                                'usage': []
                             }
                         ],
                         'usage': []

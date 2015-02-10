@@ -100,6 +100,7 @@ class ContentGroupConfigurationTest(StudioCourseTest):
         When I try to delete the Content Group with name "New Content Group"
         Then I see the delete button is disabled.
         """
+        self.group_configurations_page.visit()
         self.group_configurations_page.create_first_content_group()
         name = "New Content Group"
         config = self.group_configurations_page.content_groups[0]
