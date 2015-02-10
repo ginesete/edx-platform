@@ -1396,7 +1396,7 @@ class GroupConfiguration(object):
         return UserPartition.from_json(self.configuration)
 
     @staticmethod
-    def _get_usage_info(course, unit_parent, unit, usage_info, group_id, scheme_name=UserPartition.COHORT_SCHEME):
+    def _get_usage_info(course, unit, problem, usage_info, group_id, scheme_name=UserPartition.COHORT_SCHEME):
         """
         Get usage info for unit/module.
         """
@@ -1405,9 +1405,9 @@ class GroupConfiguration(object):
             course.location.course_key.make_usage_key(unit.location.block_type, unit.location.name)
         )
 
-        usage_dict = {'label': u"{} / {}".format(unit.display_name, unit_parent.display_name), 'url': unit_url}
+        usage_dict = {'label': u"{} / {}".format(unit.display_name, problem.display_name), 'url': unit_url}
         if scheme_name == UserPartition.RANDOM_SCHEME:
-            validation_summary = unit_parent.general_validation_message()
+            validation_summary = problem.general_validation_message()
             usage_dict.update({'validation': validation_summary.to_json() if validation_summary else None})
 
         usage_info[group_id].append(usage_dict)
@@ -1461,21 +1461,15 @@ class GroupConfiguration(object):
             if split_test.user_partition_id not in usage_info:
                 usage_info[split_test.user_partition_id] = []
 
-            unit_location = store.get_parent_location(split_test.location)
-            if not unit_location:
-                log.warning("Parent location of split_test module not found: %s", split_test.location)
-                continue
-
-            try:
-                unit = store.get_item(unit_location)
-            except ItemNotFoundError:
-                log.warning("Unit not found: %s", unit_location)
+            unit = split_test.get_parent()
+            if not unit:
+                log.warning("Unable to find parent for split_test %s", split_test.location)
                 continue
 
             usage_info = GroupConfiguration._get_usage_info(
                 course=course,
-                unit_parent=split_test,
                 unit=unit,
+                problem=split_test,
                 usage_info=usage_info,
                 group_id=split_test.user_partition_id,
                 scheme_name=UserPartition.RANDOM_SCHEME
@@ -1511,23 +1505,22 @@ class GroupConfiguration(object):
         }
         """
         usage_info = {}
-        for module in modules:
-            if hasattr(module, 'group_access') and module.group_access:
-                (__, group_ids), = module.group_access.items()
+        for problem in modules:
+            if hasattr(problem, 'group_access') and problem.group_access:
+                (__, group_ids), = problem.group_access.items()
                 for group_id in group_ids:
                     if group_id not in usage_info:
                         usage_info[group_id] = []
 
-                    module_parent = module.get_parent()
-
-                    if not module_parent:
-                        log.warning("Unable to find parent for component %s", module.location)
+                    unit = problem.get_parent()
+                    if not unit:
+                        log.warning("Unable to find parent for component %s", problem.location)
                         continue
 
                     usage_info = GroupConfiguration._get_usage_info(
                         course,
-                        unit_parent=module,
-                        unit=module_parent,
+                        unit=unit,
+                        problem=problem,
                         usage_info=usage_info,
                         group_id=group_id
                     )
