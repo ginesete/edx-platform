@@ -110,7 +110,6 @@ class ContentGroupConfigurationTest(StudioCourseTest):
 
         self.assertIn("Updated Second Content Group", second_config.name)
 
-    @skip("Failing: Need to fix")
     def test_cannot_delete_used_content_group(self):
         """
         Scenario: Ensure that the user cannot delete used content group.
