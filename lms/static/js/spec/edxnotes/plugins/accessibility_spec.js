@@ -113,6 +113,7 @@ define([
                 highlight.data('annotation', annotation);
                 spyOn(this.annotator, 'showViewer').andCallThrough();
                 spyOn(this.annotator.viewer, 'hide').andCallThrough();
+                spyOn(this.plugin, 'focusOnWrapper').andCallThrough();
             });
 
             it('should open the viewer on SPACE keydown and focus on note', function () {
@@ -125,6 +126,13 @@ define([
                 expect(this.annotator.showViewer).toHaveBeenCalled();
             });
 
+            // This happens only when coming from notes page
+            it('should open focus on viewer on TAB keydown if viewer is opened', function () {
+                this.annotator.viewer.load([annotation]);
+                highlight.trigger(keyDownEvent(this.KEY.TAB));
+                expect(this.annotator.element.find('.annotator-listing')).toBeFocused();
+            });
+
             it('should focus highlighted text after closing', function () {
                 var note;
                 highlight.trigger(keyDownEvent(this.KEY.ENTER));
@@ -133,6 +141,17 @@ define([
                 note.trigger(keyDownEvent(this.KEY.ESCAPE));
                 expect(highlight).toBeFocused();
                 expect(this.plugin.savedHighlights).toBeNull();
+            });
+
+            // TODO: Get this test to work
+            xit('should focus on wrapper after being deleted', function () {
+                var wrapper = this.annotator.element.find('.annotator-wrapper'),
+                    del;
+                highlight.trigger(keyDownEvent(this.KEY.ENTER));
+                del = this.annotator.element.find('.annotator-delete');
+                del.trigger(keyDownEvent(this.KEY.ENTER));
+                expect(wrapper).toBeFocused();
+                expect(this.plugin.focusOnWrapper).toHaveBeenCalled();
             });
         });
 

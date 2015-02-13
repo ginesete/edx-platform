@@ -166,7 +166,7 @@ define([
 
     /**
      * Modifies Annotator.Editor.html template to add tabindex = -1 to
-     * form.annotor-widget and reverse order of Save and Cancel buttons.
+     * form.annotator-widget and reverse order of Save and Cancel buttons.
      **/
     Annotator.Editor.prototype.html = [
         '<div class="annotator-outer annotator-editor">',
@@ -200,13 +200,15 @@ define([
     );
 
     /**
-     * Modifies Annotator.Editor.show to remove focus on Save button and put it
-     * on form.annotator-widget instead.
+     * Modifies Annotator.Editor.show, in the case of a keydown event, to remove
+     * focus from Save button and put it on form.annotator-widget instead.
      **/
     Annotator.Editor.prototype.show = _.compose(
-        function () {
-            this.element.find('.annotator-save').removeClass(this.classes.focus);
-            this.element.find('form.annotator-widget').focus();
+        function (event) {
+            if (event.type === 'keydown') {
+                this.element.find('.annotator-save').removeClass(this.classes.focus);
+                this.element.find('form.annotator-widget').focus();
+            }
         },
         Annotator.Editor.prototype.show
     );
@@ -217,6 +219,12 @@ define([
      * behaviors for these in /plugins/accessibility.js
      **/
     delete Annotator.Editor.prototype.events["textarea keydown"];
+
+     /**
+     * Modifies Annotator.html.wrapper template to add tabindex = -1 to
+     * annotator-wrapper.
+     **/
+    Annotator.prototype.html.wrapper = '<div class="annotator-wrapper" tabindex="-1"></div>'
 
     /**
      * Modifies Annotator.onHighlightMouseover to avoid showing the viewer if the

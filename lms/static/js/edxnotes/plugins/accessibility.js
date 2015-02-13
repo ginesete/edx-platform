@@ -21,6 +21,7 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
             this.annotator.subscribe('annotationsLoaded', this.addDescriptions);
             this.annotator.subscribe('annotationCreated', this.addDescriptions);
             this.annotator.subscribe('annotationDeleted', this.removeDescription);
+            this.annotator.subscribe('annotationDeleted', _.bind(this.focusOnWrapper, this));
             this.annotator.element.on('keydown.accessibility.hl', '.annotator-hl', this.onHighlightKeyDown);
             this.annotator.element.on('keydown.accessibility.viewer', '.annotator-viewer', this.onViewerKeyDown);
             this.annotator.element.on('keydown.accessibility.editor', '.annotator-editor', this.onEditorKeyDown);
@@ -32,6 +33,7 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
             this.annotator.unsubscribe('annotationsLoaded', this.addDescriptions);
             this.annotator.unsubscribe('annotationCreated', this.addDescriptions);
             this.annotator.unsubscribe('annotationDeleted', this.removeDescription);
+            this.annotator.unsubscribe('annotationDeleted', this.focusOnWrapper);
             this.annotator.element.off('.accessibility');
             this.savedHighlights = null;
         },
@@ -65,6 +67,10 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
         removeDescription: function (annotation) {
             var id = $(annotation.highlights).attr('aria-describedby');
             $('#' + id).remove();
+        },
+
+        focusOnWrapper: function () {
+            this.annotator.element.find('.annotator-wrapper').focus();
         },
 
         addAriaAttributes: function (field, annotation) {
@@ -152,6 +158,12 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
                 annotation, position;
 
             switch (keyCode) {
+                case KEY.TAB:
+                    // This happens only when coming from notes page
+                    if (this.annotator.viewer.isShown()) {
+                        this.annotator.element.find('.annotator-listing').focus();
+                    }
+                    break;
                 case KEY.ENTER:
                 case KEY.SPACE:
                     if (!this.annotator.viewer.isShown()) {
