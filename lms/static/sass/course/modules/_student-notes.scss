@@ -118,6 +118,10 @@ $notes-annotator-background-dark: rgba(122,122,122,0.6); // taken from annotator
   border-color: $error-color;
 }
 
+.edx-notes-focus-grabber {
+  outline: none;
+}
+
 .edx-notes-wrapper {
   // +individual note (in context)
   // --------------------

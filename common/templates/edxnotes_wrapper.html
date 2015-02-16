@@ -1,9 +1,11 @@
 <%! import json %>
+<%! from django.utils.translation import ugettext as _ %>
 <%! from student.models import anonymous_id_for_user %>
 <%
     if user:
         params.update({'user': anonymous_id_for_user(user, None)})
 %>
+<span class="sr edx-notes-focus-grabber" tabindex="-1">${_('Focus grabber')}</span>
 <div id="edx-notes-wrapper-${uid}" class="edx-notes-wrapper">
     <div class="edx-notes-wrapper-content">${content}</div>
 </div>

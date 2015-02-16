@@ -220,12 +220,6 @@ define([
      **/
     delete Annotator.Editor.prototype.events["textarea keydown"];
 
-     /**
-     * Modifies Annotator.html.wrapper template to add tabindex = -1 to
-     * annotator-wrapper.
-     **/
-    Annotator.prototype.html.wrapper = '<div class="annotator-wrapper" tabindex="-1"></div>'
-
     /**
      * Modifies Annotator.onHighlightMouseover to avoid showing the viewer if the
      * editor is opened.

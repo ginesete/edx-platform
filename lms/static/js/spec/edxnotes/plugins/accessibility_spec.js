@@ -113,7 +113,7 @@ define([
                 highlight.data('annotation', annotation);
                 spyOn(this.annotator, 'showViewer').andCallThrough();
                 spyOn(this.annotator.viewer, 'hide').andCallThrough();
-                spyOn(this.plugin, 'focusOnWrapper').andCallThrough();
+                spyOn(this.plugin, 'focusOnGrabber').andCallThrough();
             });
 
             it('should open the viewer on SPACE keydown and focus on note', function () {
@@ -143,15 +143,13 @@ define([
                 expect(this.plugin.savedHighlights).toBeNull();
             });
 
-            // TODO: Get this test to work
-            xit('should focus on wrapper after being deleted', function () {
-                var wrapper = this.annotator.element.find('.annotator-wrapper'),
-                    del;
+            // TODO: make this test pass
+            xit('should focus on grabber after being deleted', function () {
+                var del;
                 highlight.trigger(keyDownEvent(this.KEY.ENTER));
                 del = this.annotator.element.find('.annotator-delete');
                 del.trigger(keyDownEvent(this.KEY.ENTER));
-                expect(wrapper).toBeFocused();
-                expect(this.plugin.focusOnWrapper).toHaveBeenCalled();
+                expect(this.plugin.focusOnGrabber).toHaveBeenCalled();
             });
         });
 
