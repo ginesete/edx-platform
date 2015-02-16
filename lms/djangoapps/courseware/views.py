@@ -20,8 +20,8 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import UTC
-from django.views.decorators.http import require_GET
-from django.http import Http404, HttpResponse
+from django.views.decorators.http import require_GET, require_POST
+from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseNotFound, HttpResponseBadRequest
 from django.shortcuts import redirect
 from edxmako.shortcuts import render_to_response, render_to_string, marketing_link
 from django_future.csrf import ensure_csrf_cookie
@@ -56,6 +56,7 @@ import shoppingcart
 from shoppingcart.models import CourseRegistrationCode
 from shoppingcart.utils import is_shopping_cart_enabled
 from opaque_keys import InvalidKeyError
+from util.json_request import JsonResponse, JsonResponseBadRequest
 from util.milestones_helpers import get_prerequisite_courses_display
 
 from microsite_configuration import microsite
@@ -75,6 +76,12 @@ template_imports = {'urllib': urllib}
 
 CONTENT_DEPTH = 2
 
+from opaque_keys import InvalidKeyError
+from opaque_keys.edx.keys import CourseKey
+from opaque_keys.edx.locations import SlashSeparatedCourseKey
+from xmodule.modulestore.django import modulestore
+from certificates.models import CertificateStatuses as cert_status, certificate_status_for_student
+from certificates.queue import XQueueCertInterface
 
 def user_groups(user):
     """
@@ -1013,8 +1020,10 @@ def _progress(request, course_key, student_id):
         'grade_summary': grade_summary,
         'staff_access': staff_access,
         'student': student,
-        'reverifications': fetch_reverify_banner_info(request, course_key)
+        'reverifications': fetch_reverify_banner_info(request, course_key),
+        'passed': is_course_passed(course, grade_summary)
     }
+    context.update(certificate_downloadable_status(student, course_key))
 
     with grades.manual_transaction():
         response = render_to_response('courseware/progress.html', context)
@@ -1230,3 +1239,81 @@ def course_survey(request, course_id):
         redirect_url=redirect_url,
         is_required=course.course_survey_required,
     )
+
+
+@require_POST
+@login_required
+def generate_user_cert(request, course_id):
+
+    # if not request.user.is_authenticated():
+    #     log.info(u"Anon user trying to generate certificate for %s", course_id)
+    #     return JsonResponseBadRequest(_('You must be logged-in to generate certificate'))
+
+    student = request.user
+
+    # checking course id
+    course_key = SlashSeparatedCourseKey.from_deprecated_string(course_id)
+
+    #
+    course = modulestore().get_course(course_key, depth=2)
+    if not course:
+        return JsonResponseBadRequest(_("Course is not valid"))
+
+    grade = grades.grade(student, request, course)
+
+    if not is_course_passed(course, grade):
+        return JsonResponseBadRequest(_("You failed to pass the course."))
+
+    xq = XQueueCertInterface()
+    xq.use_https = False
+
+    certificate_status = certificate_downloadable_status(student, course_key)
+    if not certificate_status["is_downloadable"] and not certificate_status["is_generating"]:
+        ret = xq.add_cert(student, course_key, course=course)
+        log.info(
+            (
+                u"Added a certificate generation task to the XQueue "
+                u"for student %s in course '%s'. "
+                u"The new certificate status is '%s'."
+            ),
+            student.id,
+            unicode(course_key),
+            ret
+        )
+        return JsonResponse(_("Certificate generated."))
+    else:
+        log.warning(
+            (
+                u"user %s "
+                u"with course '%s'; "
+                u"not eligible.Reason is %s"
+            ),
+            student.id,
+            unicode(course_key), '',
+        )
+        # for any other status return bad request response
+        return JsonResponseBadRequest('')
+
+
+def is_course_passed(course, grade_summary):
+    """
+    check user's course passing status. return True if passed
+    """
+    nonzero_cutoffs = [cutoff for cutoff in course.grade_cutoffs.values() if cutoff > 0]
+    success_cutoff = min(nonzero_cutoffs) if nonzero_cutoffs else None
+
+    if success_cutoff and grade_summary['percent'] > success_cutoff:
+        return True
+    return False
+
+
+def certificate_downloadable_status(student, course_key):
+
+    current_status = certificate_status_for_student(student, course_key)['status']
+
+    response_data = {
+        'is_downloadable': True if current_status == cert_status.downloadable else False,
+        'is_generating' : True if current_status == cert_status.generating else False,
+    }
+
+    return response_data
