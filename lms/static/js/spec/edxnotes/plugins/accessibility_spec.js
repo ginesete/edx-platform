@@ -143,13 +143,15 @@ define([
                 expect(this.plugin.savedHighlights).toBeNull();
             });
 
-            // TODO: make this test pass
-            xit('should focus on grabber after being deleted', function () {
-                var del;
+            it('should focus on grabber after being deleted', function () {
                 highlight.trigger(keyDownEvent(this.KEY.ENTER));
-                del = this.annotator.element.find('.annotator-delete');
-                del.trigger(keyDownEvent(this.KEY.ENTER));
-                expect(this.plugin.focusOnGrabber).toHaveBeenCalled();
+                this.annotator.publish('annotationDeleted', {});
+                expect(this.plugin.focusGrabber).toBeFocused();
+            });
+
+            it('should not focus on grabber when the viewer is hidden', function () {
+                this.annotator.publish('annotationDeleted', {});
+                expect(this.plugin.focusGrabber).not.toBeFocused();
             });
         });
 

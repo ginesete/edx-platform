@@ -8,7 +8,7 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
         _.bindAll(this,
             'addAriaAttributes', 'onHighlightKeyDown', 'onViewerKeyDown',
             'onEditorKeyDown', 'addDescriptions', 'removeDescription',
-            'saveCurrentHighlight'
+            'saveCurrentHighlight', 'focusOnGrabber', 'showViewer', 'onClose'
         );
         // Call the Annotator.Plugin constructor this sets up the element and
         // options properties.
@@ -21,10 +21,10 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
             this.annotator.subscribe('annotationsLoaded', this.addDescriptions);
             this.annotator.subscribe('annotationCreated', this.addDescriptions);
             this.annotator.subscribe('annotationDeleted', this.removeDescription);
-            this.annotator.subscribe('annotationDeleted', _.bind(this.focusOnGrabber, this));
             this.annotator.element.on('keydown.accessibility.hl', '.annotator-hl', this.onHighlightKeyDown);
             this.annotator.element.on('keydown.accessibility.viewer', '.annotator-viewer', this.onViewerKeyDown);
             this.annotator.element.on('keydown.accessibility.editor', '.annotator-editor', this.onEditorKeyDown);
+            this.addFocusGrabber();
             this.addTabIndex();
         },
 
@@ -33,8 +33,8 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
             this.annotator.unsubscribe('annotationsLoaded', this.addDescriptions);
             this.annotator.unsubscribe('annotationCreated', this.addDescriptions);
             this.annotator.unsubscribe('annotationDeleted', this.removeDescription);
-            this.annotator.unsubscribe('annotationDeleted', this.focusOnGrabber);
             this.annotator.element.off('.accessibility');
+            this.removeFocusGrabber();
             this.savedHighlights = null;
         },
 
@@ -42,6 +42,26 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
             this.annotator.element
                 .find('.annotator-edit, .annotator-delete')
                 .attr('tabindex', 0);
+        },
+
+        addFocusGrabber: function () {
+            this.focusGrabber = $('<span />', {
+                'class': 'sr edx-notes-focus-grabber',
+                'tabindex': '-1',
+                'text': gettext('Focus grabber')
+            });
+            this.annotator.wrapper.before(this.focusGrabber);
+        },
+
+        removeFocusGrabber: function () {
+            if (this.focusGrabber) {
+                this.focusGrabber.remove();
+                this.focusGrabber = null;
+            }
+        },
+
+        focusOnGrabber: function () {
+            this.annotator.wrapper.siblings('.edx-notes-focus-grabber').focus();
         },
 
         addDescriptions: function (annotations) {
@@ -69,10 +89,6 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
             $('#' + id).remove();
         },
 
-        focusOnGrabber: function () {
-            this.annotator.element.siblings('.edx-notes-focus-grabber').focus();
-        },
-
         addAriaAttributes: function (field, annotation) {
             // Add ARIA attributes to associated note ie <div>My note</div>
             $(field).attr({
@@ -88,11 +104,10 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
             }
         },
 
-        focusOnHighlightedText: function (event) {
+        focusOnHighlightedText: function () {
             if (this.savedHighlights) {
                 this.savedHighlights.focus();
                 this.savedHighlights = null;
-                event.preventDefault();
             }
         },
 
@@ -151,6 +166,19 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
             });
         },
 
+        showViewer: function (position, annotation) {
+            annotation = $.makeArray(annotation);
+            this.saveCurrentHighlight(annotation[0]);
+            this.annotator.showViewer(annotation, position);
+            this.annotator.element.find('.annotator-listing').focus();
+            this.annotator.subscribe('annotationDeleted', this.focusOnGrabber);
+        },
+
+        onClose: function () {
+            this.focusOnHighlightedText();
+            this.annotator.unsubscribe('annotationDeleted', this.focusOnGrabber);
+        },
+
         onHighlightKeyDown: function (event) {
             var KEY = $.ui.keyCode,
                 keyCode = event.keyCode,
@@ -168,10 +196,7 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
                 case KEY.SPACE:
                     if (!this.annotator.viewer.isShown()) {
                         position = target.position();
-                        annotation = $.makeArray(target.data('annotation'));
-                        this.saveCurrentHighlight(target.data('annotation'));
-                        this.annotator.showViewer(annotation, {top: position.top, left: position.left});
-                        this.annotator.element.find('.annotator-listing').focus();
+                        this.showViewer(position, target.data('annotation'));
                     }
                     break;
                 case KEY.ESCAPE:
@@ -179,7 +204,7 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
                     break;
             }
             // We do not stop propagation and default behavior on a TAB keypress
-            if (event.keyCode !== KEY.TAB || (event.keyCode == KEY.TAB && this.annotator.viewer.isShown())) {
+            if (event.keyCode !== KEY.TAB || (event.keyCode === KEY.TAB && this.annotator.viewer.isShown())) {
                 event.preventDefault();
                 event.stopPropagation();
             }
@@ -217,12 +242,14 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
                 case KEY.SPACE:
                     if (target.hasClass('annotator-close')) {
                         this.annotator.viewer.hide();
-                        this.focusOnHighlightedText(event);
+                        this.onClose();
+                        event.preventDefault();
                     }
                     break;
                 case KEY.ESCAPE:
                     this.annotator.viewer.hide();
-                    this.focusOnHighlightedText(event);
+                    this.onClose();
+                    event.preventDefault();
                     break;
             }
         },
@@ -267,7 +294,8 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
                     } else {
                         break;
                     }
-                    this.focusOnHighlightedText(event);
+                    this.onClose();
+                    event.preventDefault();
                     break;
                 case KEY.SPACE:
                     if (target.is(save)) {
@@ -277,11 +305,13 @@ define(['jquery', 'underscore', 'annotator_1.2.9'], function ($, _, Annotator) {
                     } else {
                         break;
                     }
-                    this.focusOnHighlightedText(event);
+                    this.onClose();
+                    event.preventDefault();
                     break;
                 case KEY.ESCAPE:
                     this.annotator.editor.hide();
-                    this.focusOnHighlightedText(event);
+                    this.onClose();
+                    event.preventDefault();
                     break;
             }
         }
