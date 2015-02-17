@@ -1335,6 +1335,6 @@ def certificate_downloadable_status(student, course_key):
 
     if current_status['status'] == cert_status.downloadable:
         response_data['is_downloadable'] = True
-        response_data['download_url'] = cert_status['download_url']
+        response_data['download_url'] = current_status['download_url']
 
     return response_data
