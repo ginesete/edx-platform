@@ -21,7 +21,7 @@ from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import UTC
 from django.views.decorators.http import require_GET, require_POST
-from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseNotFound, HttpResponseBadRequest
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect
 from edxmako.shortcuts import render_to_response, render_to_string, marketing_link
 from django_future.csrf import ensure_csrf_cookie
@@ -69,6 +69,9 @@ import survey.utils
 import survey.views
 
 from util.views import ensure_valid_course_key
+from certificates.models import CertificateStatuses as cert_status, certificate_status_for_student
+from certificates.queue import XQueueCertInterface
+
 
 log = logging.getLogger("edx.courseware")
 
@@ -76,12 +79,6 @@ template_imports = {'urllib': urllib}
 
 CONTENT_DEPTH = 2
 
-from opaque_keys import InvalidKeyError
-from opaque_keys.edx.keys import CourseKey
-from opaque_keys.edx.locations import SlashSeparatedCourseKey
-from xmodule.modulestore.django import modulestore
-from certificates.models import CertificateStatuses as cert_status, certificate_status_for_student
-from certificates.queue import XQueueCertInterface
 
 def user_groups(user):
     """
@@ -1243,6 +1240,16 @@ def course_survey(request, course_id):
 
 @require_POST
 def generate_user_cert(request, course_id):
+    """
+    It will add the add-cert request into the xqueue.
+
+     Arguments:
+        request (django request object):  the HTTP request object that triggered this view function
+        course_id (unicode):  id associated with the course
+
+    Returns:
+        returns json response
+    """
 
     if not request.user.is_authenticated():
         log.info(u"Anon user trying to generate certificate for %s", course_id)
@@ -1263,12 +1270,11 @@ def generate_user_cert(request, course_id):
     if not is_course_passed(course, grade):
         return JsonResponseBadRequest(_("You failed to pass the course."))
 
-    xq = XQueueCertInterface()
-    xq.use_https = False
+    xqueue = XQueueCertInterface()
 
     certificate_status = certificate_downloadable_status(student, course_key)
     if not certificate_status["is_downloadable"] and not certificate_status["is_generating"]:
-        ret = xq.add_cert(student, course_key, course=course)
+        ret = xqueue.add_cert(student, course_key, course=course)
         log.info(
             (
                 u"Added a certificate generation task to the XQueue "
@@ -1307,6 +1313,17 @@ def is_course_passed(course, grade_summary):
 
 
 def certificate_downloadable_status(student, course_key):
+
+    """
+    check the student existing certificates against a given course.
+    if status is not generating and downloadable then user can view the generate button.
+    Arguments:
+        student : user object
+        course_key :  id associated with the course
+    Returns:
+        returns dict
+
+    """
 
     current_status = certificate_status_for_student(student, course_key)
 

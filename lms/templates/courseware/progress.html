@@ -60,7 +60,7 @@ from django.utils.http import urlquote_plus
                             </a>
                     %elif is_generating:
                             <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
-                            <p>${_("Your cerfiticate is currently generating")}</p>
+                            <p class="text-center">${_("Your cerfiticate is currently generating")}</p>
                     %else:
                         <input type="button" class="btn" id="btn_generate_cert" value="${_('Generate your certificate')}">
                     %endif
