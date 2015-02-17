@@ -310,12 +310,6 @@ define([
         unfreezeAll: function () {
             _.invoke(Annotator._instances, 'unfreeze');
             return this;
-        },
-
-        showFrozenViewer: function (annotations, location) {
-            this.showViewer(annotations, location);
-            this.freezeAll();
-            return this;
         }
     });
 });
