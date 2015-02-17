@@ -1312,11 +1312,9 @@ def certificate_downloadable_status(student, course_key):
 
     response_data = {
         'is_downloadable': False,
-        'is_generating': False,
+        'is_generating': True if current_status['status'] == cert_status.generating else False,
         'download_url': None
     }
-
-    response_data['is_generating'] = True if current_status['status'] == cert_status.generating else False
 
     if current_status['status'] == cert_status.downloadable:
         response_data['is_downloadable'] = True
