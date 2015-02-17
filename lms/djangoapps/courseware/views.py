@@ -1242,12 +1242,11 @@ def course_survey(request, course_id):
 
 
 @require_POST
-@login_required
 def generate_user_cert(request, course_id):
 
-    # if not request.user.is_authenticated():
-    #     log.info(u"Anon user trying to generate certificate for %s", course_id)
-    #     return JsonResponseBadRequest(_('You must be logged-in to generate certificate'))
+    if not request.user.is_authenticated():
+        log.info(u"Anon user trying to generate certificate for %s", course_id)
+        return JsonResponseBadRequest(_('You must be logged-in to generate certificate'))
 
     student = request.user
 
@@ -1309,11 +1308,18 @@ def is_course_passed(course, grade_summary):
 
 def certificate_downloadable_status(student, course_key):
 
-    current_status = certificate_status_for_student(student, course_key)['status']
+    current_status = certificate_status_for_student(student, course_key)
 
     response_data = {
-        'is_downloadable': True if current_status == cert_status.downloadable else False,
-        'is_generating' : True if current_status == cert_status.generating else False,
+        'is_downloadable': False,
+        'is_generating': False,
+        'download_url': None
     }
+
+    response_data['is_generating'] = True if current_status['status'] == cert_status.generating else False
+
+    if current_status['status'] == cert_status.downloadable:
+        response_data['is_downloadable'] = True
+        response_data['download_url'] = cert_status['download_url']
 
     return response_data

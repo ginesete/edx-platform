@@ -37,7 +37,6 @@ from django.utils.http import urlquote_plus
 <%include file="/courseware/course_navigation.html" args="active_page='progress'" />
 
 <div class="container">
-    <div class="results"></div>
   <div class="profile-wrapper">
 
     <div class="course-info" id="course-info-progress" aria-label="${_('Course Progress')}">
@@ -51,39 +50,27 @@ from django.utils.http import urlquote_plus
         <h1>${_("Course Progress for Student '{username}' ({email})").format(username=student.username, email=student.email)}</h1>
       </header>
 
-
-
-
-         %if passed:
-            % if is_downloadable:
-                %if settings.FEATURES.get("SHOW_PROGRESS_SUCCESS_BUTTON"):
-                    <%
-                      SUCCESS_BUTTON_URL = settings.PROGRESS_SUCCESS_BUTTON_URL.format(
-                        course_id=urlquote_plus(unicode(course.id)),
-                        student_id=urlquote_plus(student.id)
-                      )
-                    %>
-                    <div id="course-success">
-                    <a href="${SUCCESS_BUTTON_URL}">
-                    ${settings.PROGRESS_SUCCESS_BUTTON_TEXT_OVERRIDE or _("Download your certificate")}
-                   </a>
-                </div>
+            %if course.has_ended():
+                <div id="course-success">
+                 %if passed:
+                    % if is_downloadable and download_url:
+                            <a class="btn" href="${download_url}" target="_blank"
+                            title="${_('This link will open/download a PDF document')}">
+                            ${_("Download Your Certificate")}
+                            </a>
+                    %elif is_generating:
+                            <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
+                            <p>${_("Your cerfiticate is currently generating")}</p>
+                    %else:
+                        <input type="button" class="btn" id="btn_generate_cert" value="${_('Generate your certificate')}">
+                    %endif
+                %else:
+                    <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
+                    <p class="text-center">${_("Your cerfiticate is not available since you did not pass")}</p>
                 %endif
-
-            %elif is_generating:
-                <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
-                <p>Your cerfiticate is currently generating.</p>
-            %else:
-                <input type="button" id="btn_generate_cert" value="${_('Generate your certificate')}">
+                </div>
+                <div id="errors-info" class="text-center"></div>
             %endif
-        %else:
-            <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
-            <p>Your cerfiticate is not available since you did not pass.</p>
-
-        %endif
-
-
-
 
       %if not course.disable_progress_graph:
         <div id="grade-detail-graph" aria-hidden="true"></div>
@@ -158,21 +145,20 @@ from django.utils.http import urlquote_plus
 
 <script>
 
-   $("#btn_generate_cert").click(function(){
+   $("#btn_generate_cert").click(function(e){
         var post_url =  "${reverse('generate_user_cert', args=[course.id.to_deprecated_string()])}";
+       $('#btn_generate_cert').prop("disabled", true);
+
         $.ajax({
                  type: "POST",
-                 data: {
-                    course_id : "${course.id.to_deprecated_string()}"
-                 },
                  url: post_url,
                  success: function (data) {
-                     var data = $.parseJSON(data);
-                     alert(data);
+                    location.reload();
                    },
                  error: function(jqXHR, textStatus, errorThrown) {
                    var data = $.parseJSON(jqXHR.responseText);
-                   $('.results').append('a');
+                   $('#errors-info').html(data);
+                   $('#btn_generate_cert').prop("disabled", false);
                  }
           });
     });
