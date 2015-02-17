@@ -1,6 +1,7 @@
 import logging
 import math
 import random
+import time
 import itertools
 from itertools import chain
 from optparse import make_option
@@ -227,6 +228,7 @@ def subscribe_with_data(mailchimp, list_id, user_data):
                                               batch=batch,
                                               double_optin=False,
                                               update_existing=True)
+        time.sleep(1)
         log.debug(result)
 
 
