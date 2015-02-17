@@ -50,7 +50,6 @@ from django.utils.http import urlquote_plus
         <h1>${_("Course Progress for Student '{username}' ({email})").format(username=student.username, email=student.email)}</h1>
       </header>
 
-            %if course.has_ended():
                 <div id="course-success">
                  %if passed:
                     % if is_downloadable and download_url:
@@ -62,15 +61,14 @@ from django.utils.http import urlquote_plus
                             <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
                             <p class="text-center">${_("Your cerfiticate is currently generating")}</p>
                     %else:
-                        <input type="button" class="btn" id="btn_generate_cert" value="${_('Generate your certificate')}">
+                        <input type="button" class="btn-blue" id="btn_generate_cert" value="${_('Generate your certificate')}">
                     %endif
                 %else:
                     <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
-                    <p class="text-center">${_("Your cerfiticate is not available since you did not pass")}</p>
+                    <p class="text-center">${_("Your cerfiticate is not available.")}</p>
                 %endif
                 </div>
                 <div id="errors-info" class="text-center"></div>
-            %endif
 
       %if not course.disable_progress_graph:
         <div id="grade-detail-graph" aria-hidden="true"></div>

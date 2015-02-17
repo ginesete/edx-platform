@@ -1260,7 +1260,6 @@ def generate_user_cert(request, course_id):
     # checking course id
     course_key = SlashSeparatedCourseKey.from_deprecated_string(course_id)
 
-    #
     course = modulestore().get_course(course_key, depth=2)
     if not course:
         return JsonResponseBadRequest(_("Course is not valid"))
