@@ -25,7 +25,7 @@ from django_comment_common.models import Role
 from opaque_keys.edx.locations import SlashSeparatedCourseKey
 from edxmako.shortcuts import marketing_link
 
-from student.views import create_account_with_params
+from student.views import create_account_with_params, set_marketing_cookie
 from util.authentication import SessionAuthenticationAllowInactiveUser
 from util.json_request import JsonResponse
 from .api import account as account_api, profile as profile_api
@@ -293,7 +293,9 @@ class RegistrationView(APIView):
             }
             return JsonResponse(errors, status=400)
 
-        return JsonResponse({"success": True})
+        response = JsonResponse({"success": True})
+        set_marketing_cookie(request, response)
+        return response
 
     def _add_email_field(self, form_desc, required=True):
         """Add an email field to a form description.

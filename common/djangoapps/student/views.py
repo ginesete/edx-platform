@@ -1571,10 +1571,10 @@ def create_account_with_params(request, params):
 
 
 def set_marketing_cookie(request, response):
-    # set the login cookie for the edx marketing site
-    # we want this cookie to be accessed via javascript
-    # so httponly is set to None
-
+    """
+    Set the login cookie for the edx marketing site on the given response. Its
+    expiration will match that of the given request's session.
+    """
     if request.session.get_expire_at_browser_close():
         max_age = None
         expires = None
@@ -1583,12 +1583,18 @@ def set_marketing_cookie(request, response):
         expires_time = time.time() + max_age
         expires = cookie_date(expires_time)
 
-    response.set_cookie(settings.EDXMKTG_COOKIE_NAME,
-                        'true', max_age=max_age,
-                        expires=expires, domain=settings.SESSION_COOKIE_DOMAIN,
-                        path='/',
-                        secure=None,
-                        httponly=None)
+    # we want this cookie to be accessed via javascript
+    # so httponly is set to None
+    response.set_cookie(
+        settings.EDXMKTG_COOKIE_NAME,
+        'true',
+        max_age=max_age,
+        expires=expires,
+        domain=settings.SESSION_COOKIE_DOMAIN,
+        path='/',
+        secure=None,
+        httponly=None
+    )
 
 
 @csrf_exempt
