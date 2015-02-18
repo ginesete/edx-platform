@@ -61,13 +61,13 @@ from django.utils.http import urlquote_plus
                             </a>
                     %elif is_generating:
                             <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
-                            <p class="text-center">${_("Your cerfiticate is currently generating")}</p>
+                            <p class="text-center">${_("Your certificate is currently generating")}</p>
                     %else:
                         <input type="button" data-endpoint="${reverse('generate_user_cert', args=[course.id.to_deprecated_string()])}" class="btn-blue" id="btn_generate_cert" value="${_('Generate your certificate')}">
                     %endif
                 %else:
                     <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
-                    <p class="text-center">${_("Your cerfiticate is not available.")}</p>
+                    <p class="text-center">${_("Your certificate is not available.")}</p>
                 %endif
                 </div>
                 <div id="errors-info" class="text-center"></div>
