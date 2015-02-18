@@ -71,6 +71,15 @@ def generate_user_cert(request, course_id):
 def is_course_passed(course, grade_summary=None, student=None, request=None):
     """
     check user's course passing status. return True if passed
+
+    Arguments:
+        course : course object
+        grade_summary (dict) : contains student grade details.
+        student : user object
+        request (HttpRequest)
+
+    Returns:
+        returns bool value
     """
     nonzero_cutoffs = [cutoff for cutoff in course.grade_cutoffs.values() if cutoff > 0]
     success_cutoff = min(nonzero_cutoffs) if nonzero_cutoffs else None
