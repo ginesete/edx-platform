@@ -57,6 +57,7 @@ class Command(BaseCommand):
         exclude = subscribed.union(non_subscribed)
         to_subscribe = get_data(enrolled, exclude=exclude)
 
+        log.info('About to subscribe {} new users.'.format(len(to_subscribe)))
         subscribe_with_data(mailchimp, list_id, to_subscribe)
 
 
