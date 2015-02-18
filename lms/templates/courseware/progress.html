@@ -6,7 +6,9 @@
 <%block name="headextra">
 <%static:css group='style-course-vendor'/>
 <%static:css group='style-course'/>
+<script type="text/javascript" src="${static.url('js/courseware/certificates_api.js')}"></script>
 </%block>
+
 
 <%namespace name="progress_graph" file="/courseware/progress_graph.js"/>
 
@@ -61,7 +63,7 @@ from django.utils.http import urlquote_plus
                             <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
                             <p class="text-center">${_("Your cerfiticate is currently generating")}</p>
                     %else:
-                        <input type="button" class="btn-blue" id="btn_generate_cert" value="${_('Generate your certificate')}">
+                        <input type="button" data-endpoint="${reverse('generate_user_cert', args=[course.id.to_deprecated_string()])}" class="btn-blue" id="btn_generate_cert" value="${_('Generate your certificate')}">
                     %endif
                 %else:
                     <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
@@ -141,24 +143,3 @@ from django.utils.http import urlquote_plus
   </div>
 </div>
 
-<script>
-
-   $("#btn_generate_cert").click(function(e){
-        var post_url =  "${reverse('generate_user_cert', args=[course.id.to_deprecated_string()])}";
-       $('#btn_generate_cert').prop("disabled", true);
-
-        $.ajax({
-                 type: "POST",
-                 url: post_url,
-                 success: function (data) {
-                    location.reload();
-                   },
-                 error: function(jqXHR, textStatus, errorThrown) {
-                   var data = $.parseJSON(jqXHR.responseText);
-                   $('#errors-info').html(data);
-                   $('#btn_generate_cert').prop("disabled", false);
-                 }
-          });
-    });
-
-</script>

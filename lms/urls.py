@@ -410,9 +410,9 @@ if settings.COURSEWARE_ENABLED:
         )
 
     urlpatterns += (
-            url(r'^courses/{}/generate_user_cert'.format(settings.COURSE_ID_PATTERN),
-                'courseware.views.generate_user_cert', name="generate_user_cert"),
-        )
+        url(r'^courses/{}/generate_user_cert'.format(settings.COURSE_ID_PATTERN),
+        'certificates.api.generate_user_cert', name="generate_user_cert"),
+    )
 
     # discussion forums live within courseware, so courseware must be enabled first
     if settings.FEATURES.get('ENABLE_DISCUSSION_SERVICE'):

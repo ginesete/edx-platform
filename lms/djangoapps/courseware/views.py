@@ -20,9 +20,10 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import UTC
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect
+from certificates.api import is_course_passed, certificate_downloadable_status
 from edxmako.shortcuts import render_to_response, render_to_string, marketing_link
 from django_future.csrf import ensure_csrf_cookie
 from django.views.decorators.cache import cache_control
@@ -56,7 +57,6 @@ import shoppingcart
 from shoppingcart.models import CourseRegistrationCode
 from shoppingcart.utils import is_shopping_cart_enabled
 from opaque_keys import InvalidKeyError
-from util.json_request import JsonResponse, JsonResponseBadRequest
 from util.milestones_helpers import get_prerequisite_courses_display
 
 from microsite_configuration import microsite
@@ -69,9 +69,6 @@ import survey.utils
 import survey.views
 
 from util.views import ensure_valid_course_key
-from certificates.models import CertificateStatuses as cert_status, certificate_status_for_student
-from certificates.queue import XQueueCertInterface
-
 
 log = logging.getLogger("edx.courseware")
 
@@ -1236,104 +1233,3 @@ def course_survey(request, course_id):
         redirect_url=redirect_url,
         is_required=course.course_survey_required,
     )
-
-
-@require_POST
-def generate_user_cert(request, course_id):
-    """
-    It will add the add-cert request into the xqueue.
-
-     Arguments:
-        request (django request object):  the HTTP request object that triggered this view function
-        course_id (unicode):  id associated with the course
-
-    Returns:
-        returns json response
-    """
-
-    if not request.user.is_authenticated():
-        log.info(u"Anon user trying to generate certificate for %s", course_id)
-        return JsonResponseBadRequest(_('You must be logged-in to generate certificate'))
-
-    student = request.user
-
-    # checking course id
-    course_key = SlashSeparatedCourseKey.from_deprecated_string(course_id)
-
-    course = modulestore().get_course(course_key, depth=2)
-    if not course:
-        return JsonResponseBadRequest(_("Course is not valid"))
-
-    grade = grades.grade(student, request, course)
-
-    if not is_course_passed(course, grade):
-        return JsonResponseBadRequest(_("You failed to pass the course."))
-
-    xqueue = XQueueCertInterface()
-
-    certificate_status = certificate_downloadable_status(student, course_key)
-    if not certificate_status["is_downloadable"] and not certificate_status["is_generating"]:
-        ret = xqueue.add_cert(student, course_key, course=course)
-        log.info(
-            (
-                u"Added a certificate generation task to the XQueue "
-                u"for student %s in course '%s'. "
-                u"The new certificate status is '%s'."
-            ),
-            student.id,
-            unicode(course_key),
-            ret
-        )
-        return JsonResponse(_("Certificate generated."))
-    else:
-        log.warning(
-            (
-                u"user %s "
-                u"with course '%s'; "
-                u"not eligible.Reason is %s"
-            ),
-            student.id,
-            unicode(course_key), '',
-        )
-        # for any other status return bad request response
-        return JsonResponseBadRequest('')
-
-
-def is_course_passed(course, grade_summary):
-    """
-    check user's course passing status. return True if passed
-    """
-    nonzero_cutoffs = [cutoff for cutoff in course.grade_cutoffs.values() if cutoff > 0]
-    success_cutoff = min(nonzero_cutoffs) if nonzero_cutoffs else None
-
-    if success_cutoff and grade_summary['percent'] > success_cutoff:
-        return True
-    return False
-
-
-def certificate_downloadable_status(student, course_key):
-
-    """
-    check the student existing certificates against a given course.
-    if status is not generating and downloadable then user can view the generate button.
-    Arguments:
-        student : user object
-        course_key :  id associated with the course
-    Returns:
-        returns dict
-
-    """
-
-    current_status = certificate_status_for_student(student, course_key)
-
-    response_data = {
-        'is_downloadable': False,
-        'is_generating': True if current_status['status'] == cert_status.generating else False,
-        'download_url': None
-    }
-
-    if current_status['status'] == cert_status.downloadable:
-        response_data['is_downloadable'] = True
-        response_data['download_url'] = current_status['download_url']
-
-    return response_data
