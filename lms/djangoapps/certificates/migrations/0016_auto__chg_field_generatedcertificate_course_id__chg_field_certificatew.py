@@ -8,18 +8,20 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding model 'CertificateGenerationConfiguration'
-        db.create_table('certificates_certificategenerationconfiguration', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('change_date', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('changed_by', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'], null=True, on_delete=models.PROTECT)),
-            ('enabled', self.gf('django.db.models.fields.BooleanField')(default=False)),
-        ))
-        db.send_create_signal('certificates', ['CertificateGenerationConfiguration'])
+
+        # Changing field 'GeneratedCertificate.course_id'
+        db.alter_column('certificates_generatedcertificate', 'course_id', self.gf('xmodule_django.models.CourseKeyField')(max_length=255))
+
+        # Changing field 'CertificateWhitelist.course_id'
+        db.alter_column('certificates_certificatewhitelist', 'course_id', self.gf('xmodule_django.models.CourseKeyField')(max_length=255))
 
     def backwards(self, orm):
-        # Deleting model 'CertificateGenerationConfiguration'
-        db.delete_table('certificates_certificategenerationconfiguration')
+
+        # Changing field 'GeneratedCertificate.course_id'
+        db.alter_column('certificates_generatedcertificate', 'course_id', self.gf('django.db.models.fields.CharField')(max_length=255))
+
+        # Changing field 'CertificateWhitelist.course_id'
+        db.alter_column('certificates_certificatewhitelist', 'course_id', self.gf('django.db.models.fields.CharField')(max_length=255))
 
     models = {
         'auth.group': {
@@ -51,23 +53,16 @@ class Migration(SchemaMigration):
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         },
-        'certificates.certificategenerationconfiguration': {
-            'Meta': {'object_name': 'CertificateGenerationConfiguration'},
-            'change_date': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'changed_by': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'on_delete': 'models.PROTECT'}),
-            'enabled': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
-        },
         'certificates.certificatewhitelist': {
             'Meta': {'object_name': 'CertificateWhitelist'},
-            'course_id': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
+            'course_id': ('xmodule_django.models.CourseKeyField', [], {'default': 'None', 'max_length': '255', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"}),
             'whitelist': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
         },
         'certificates.generatedcertificate': {
             'Meta': {'unique_together': "(('user', 'course_id'),)", 'object_name': 'GeneratedCertificate'},
-            'course_id': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
+            'course_id': ('xmodule_django.models.CourseKeyField', [], {'default': 'None', 'max_length': '255', 'blank': 'True'}),
             'created_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'auto_now_add': 'True', 'blank': 'True'}),
             'distinction': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'download_url': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '128', 'blank': 'True'}),

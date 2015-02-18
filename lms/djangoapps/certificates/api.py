@@ -5,6 +5,7 @@ Certificates API views
 import logging
 from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
+from django_future.csrf import ensure_csrf_cookie
 from courseware import grades
 from xmodule.modulestore.django import modulestore
 from util.json_request import JsonResponse, JsonResponseBadRequest
@@ -16,6 +17,7 @@ from opaque_keys import InvalidKeyError
 log = logging.getLogger("edx.certificate")
 
 
+@ensure_csrf_cookie
 @require_POST
 def generate_user_cert(request, course_id):
     """
