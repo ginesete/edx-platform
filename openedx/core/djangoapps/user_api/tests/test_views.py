@@ -1373,7 +1373,10 @@ class RegistrationViewTest(ApiTestCase):
             response_json,
             {
                 "email": [{
-                    "user_message": "It looks like {} belongs to an existing account. Try again with a different email address.".format(
+                    "user_message": (
+                        "It looks like {} belongs to an existing account. "
+                        "Try again with a different email address."
+                    ).format(
                         self.EMAIL
                     )
                 }]
@@ -1405,7 +1408,10 @@ class RegistrationViewTest(ApiTestCase):
             response_json,
             {
                 "username": [{
-                    "user_message": "It looks like {} belongs to an existing account. Try again with a different username.".format(
+                    "user_message": (
+                        "It looks like {} belongs to an existing account. "
+                        "Try again with a different username."
+                    ).format(
                         self.USERNAME
                     )
                 }]
@@ -1437,12 +1443,18 @@ class RegistrationViewTest(ApiTestCase):
             response_json,
             {
                 "username": [{
-                    "user_message": "It looks like {} belongs to an existing account. Try again with a different username.".format(
+                    "user_message": (
+                        "It looks like {} belongs to an existing account. "
+                        "Try again with a different username."
+                    ).format(
                         self.USERNAME
                     )
                 }],
                 "email": [{
-                    "user_message": "It looks like {} belongs to an existing account. Try again with a different email address.".format(
+                    "user_message": (
+                        "It looks like {} belongs to an existing account. "
+                        "Try again with a different email address."
+                    ).format(
                         self.EMAIL
                     )
                 }]
