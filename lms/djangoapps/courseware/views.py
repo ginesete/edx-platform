@@ -24,6 +24,7 @@ from django.views.decorators.http import require_GET
 from django.http import Http404, HttpResponse
 from django.shortcuts import redirect
 from certificates.api import is_course_passed, certificate_downloadable_status
+from certificates.models import CertificateGenerationConfiguration
 from edxmako.shortcuts import render_to_response, render_to_string, marketing_link
 from django_future.csrf import ensure_csrf_cookie
 from django.views.decorators.cache import cache_control
@@ -1007,6 +1008,9 @@ def _progress(request, course_key, student_id):
         #This means the student didn't have access to the course (which the instructor requested)
         raise Http404
 
+    # checking certificate generation configuration
+    show_generate_cert_btn = CertificateGenerationConfiguration.current().enabled
+
     context = {
         'course': course,
         'courseware_summary': courseware_summary,
@@ -1015,9 +1019,12 @@ def _progress(request, course_key, student_id):
         'staff_access': staff_access,
         'student': student,
         'reverifications': fetch_reverify_banner_info(request, course_key),
-        'passed': is_course_passed(course, grade_summary)
+        'passed': is_course_passed(course, grade_summary) if show_generate_cert_btn else False,
+        'show_generate_cert_btn': show_generate_cert_btn
     }
-    context.update(certificate_downloadable_status(student, course_key))
+
+    if show_generate_cert_btn:
+        context.update(certificate_downloadable_status(student, course_key))
 
     with grades.manual_transaction():
         response = render_to_response('courseware/progress.html', context)

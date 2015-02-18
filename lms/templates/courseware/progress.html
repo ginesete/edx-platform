@@ -52,25 +52,27 @@ from django.utils.http import urlquote_plus
         <h1>${_("Course Progress for Student '{username}' ({email})").format(username=student.username, email=student.email)}</h1>
       </header>
 
-       <div id="course-success">
-         %if passed:
-            % if is_downloadable and download_url:
-                <a class="btn" href="${download_url}" target="_blank"
-                title="${_('This link will open/download a PDF document')}">
-                ${_("Download Your Certificate")}
-                </a>
-            %elif is_generating:
+       %if show_generate_cert_btn:
+           <div id="course-success">
+             %if passed:
+                % if is_downloadable and download_url:
+                    <a class="btn" href="${download_url}" target="_blank"
+                    title="${_('This link will open/download a PDF document')}">
+                    ${_("Download Your Certificate")}
+                    </a>
+                %elif is_generating:
+                    <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
+                    <p class="text-center">${_("Your certificate is currently generating")}</p>
+                %else:
+                    <input type="button" data-endpoint="${reverse('generate_user_cert', args=[course.id.to_deprecated_string()])}" class="btn-blue" id="btn_generate_cert" value="${_('Generate your certificate')}">
+                %endif
+             %else:
                 <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
-                <p class="text-center">${_("Your certificate is currently generating")}</p>
-            %else:
-                <input type="button" data-endpoint="${reverse('generate_user_cert', args=[course.id.to_deprecated_string()])}" class="btn-blue" id="btn_generate_cert" value="${_('Generate your certificate')}">
-            %endif
-         %else:
-            <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
-            <p class="text-center">${_("Your certificate is not available.")}</p>
-         %endif
-       </div>
-       <div id="errors-info" class="text-center"></div>
+                <p class="text-center">${_("Your certificate is not available.")}</p>
+             %endif
+           </div>
+           <div id="errors-info" class="text-center"></div>
+       %endif
 
       %if not course.disable_progress_graph:
         <div id="grade-detail-graph" aria-hidden="true"></div>
