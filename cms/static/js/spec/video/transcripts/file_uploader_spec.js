@@ -5,7 +5,7 @@ define(
         "xmodule", "jquery.form", "jasmine-jquery"
     ],
 function ($, _, Utils, FileUploader) {
-    describe('Transcripts.FileUploader', function () {
+    xdescribe('Transcripts.FileUploader', function () {
         var videoListEntryTemplate = readFixtures(
                 'video/transcripts/metadata-videolist-entry.underscore'
             ),
