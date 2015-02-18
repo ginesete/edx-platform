@@ -15,7 +15,7 @@ from mailsnake import MailSnake
 from student.models import UserProfile, unique_id_for_user
 
 
-BATCH_SIZE = 5000
+BATCH_SIZE = 50000
 
 log = logging.getLogger('edx.mailchimp')
 
