@@ -10,6 +10,7 @@ import logging
 import pytz
 import unittest
 import ddt
+from urllib import urlencode
 
 from django.conf import settings
 from django.contrib.auth.models import User, AnonymousUser
@@ -20,6 +21,7 @@ from django.test.client import RequestFactory, Client
 from django.test.utils import override_settings
 from mock import Mock, patch
 from opaque_keys.edx.locations import SlashSeparatedCourseKey
+from opaque_keys.edx.locator import CourseLocator
 
 from student.models import (
     anonymous_id_for_user, user_by_anonymous_id, CourseEnrollment, unique_id_for_user,
@@ -309,6 +311,36 @@ class CourseEndingTest(TestCase):
 
         status_dict = _cert_info(user, course, cert_status, cert_mode)
         self.assertIn(cert_name.replace(' ', '+'), status_dict['linked_in_url'])
+
+    def test_linked_in_url_tracking_code(self):
+        user = Mock(username="fred")
+        course_key = CourseLocator('edx', 'DemoX', 'Demo_Course')
+        course = Mock(
+            id=course_key,
+            display_name='DemoX',
+            end_of_course_survey_url='http://example.com',
+            certificates_display_behavior='end'
+        )
+        cert_status = {
+            'status': 'downloadable',
+            'grade': '67',
+            'download_url': 'http://edx.org',
+            'mode': 'honor'
+        }
+
+        LinkedInAddToProfileConfiguration(
+            company_identifier="abcd123",
+            trk_partner_name="edx",
+            enabled=True
+        ).save()
+
+        status_dict = _cert_info(user, course, cert_status, 'honor')
+        expected_param = urlencode({
+            'trk': u'edx-{course_key}_honor'.format(
+                course_key=course_key
+            )
+        })
+        self.assertIn(expected_param, status_dict['linked_in_url'])
 
 
 class DashboardTest(ModuleStoreTestCase):

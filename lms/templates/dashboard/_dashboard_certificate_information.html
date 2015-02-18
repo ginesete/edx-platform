@@ -54,25 +54,20 @@ else:
       <a class="btn" href="${cert_status['download_url']}"
          title="${_('This link will open/download a PDF document')}">
          ${_("Download {cert_name_short} (PDF)").format(cert_name_short=cert_name_short,)}</a></li>
-
-         % if cert_status['linked_in_url']:
-           <li class="action action-share">
-           <a class="btn" target="_blank" href="${cert_status['linked_in_url']}"
-             title="${_('Add Certificate to LinkedIn Profile')}">
-             ${_("Share on LinkedIn")}</a></li>
-          % endif
-
+      <%include file='_dashboard_linkedin.html' args='cert_status=cert_status,course=course'/>
     % elif cert_status['show_download_url'] and enrollment.mode == 'verified' and cert_status['mode'] == 'honor':
       <li class="action">
       <p>${_('Since we did not have a valid set of verification photos from you when your {cert_name_long} was generated, we could not grant you a verified {cert_name_short}. An honor code {cert_name_short} has been granted instead.').format(cert_name_short=cert_name_short, cert_name_long=cert_name_long)}</p>
       <a class="btn" href="${cert_status['download_url']}"
          title="${_('This link will open/download a PDF document')}">
          ${_("Download Your {cert_name_short} (PDF)").format(cert_name_short=cert_name_short)}</a></li>
+      <%include file='_dashboard_linkedin.html' args='cert_status=cert_status,course=course'/>
     % elif cert_status['show_download_url'] and enrollment.mode == 'verified':
       <li class="action">
       <a class="btn" href="${cert_status['download_url']}"
          title="${_('This link will open/download a PDF document of your verified {cert_name_long}.').format(cert_name_long=cert_name_long)}">
          ${_("Download Your ID Verified {cert_name_short} (PDF)").format(cert_name_short=cert_name_short)}</a></li>
+      <%include file='_dashboard_linkedin.html' args='cert_status=cert_status,course=course'/>
     % endif
 
     % if cert_status['show_survey_button']:
