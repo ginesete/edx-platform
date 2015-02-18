@@ -81,6 +81,11 @@ class TestCreateAccount(TestCase):
         user = User.objects.get(username=self.username)
         return user.profile
 
+    def test_marketing_cookie(self):
+        response = self.client.post(self.url, self.params)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(settings.EDXMKTG_COOKIE_NAME, self.client.cookies)
+
     @unittest.skipUnless(
         "microsite_configuration.middleware.MicrositeMiddleware" in settings.MIDDLEWARE_CLASSES,
         "Microsites not implemented in this environment"
