@@ -2,6 +2,7 @@ import logging
 import math
 import random
 import itertools
+import pickle
 from itertools import chain
 from optparse import make_option
 from collections import namedtuple
@@ -54,6 +55,9 @@ class Command(BaseCommand):
         enrolled = get_enrolled()
         exclude = subscribed.union(non_subscribed)
         to_subscribe = get_data(enrolled, exclude=exclude)
+
+        with open('to_subscribe.pickle', 'w') as f:
+            pickle.dump(to_subscribe, f)
 
         log.info('About to subscribe {} new users.'.format(len(to_subscribe)))
         subscribe_with_data(mailchimp, list_id, to_subscribe)
