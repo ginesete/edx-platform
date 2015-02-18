@@ -1404,10 +1404,23 @@ def _do_create_account(form):
     return (user, profile, registration)
 
 
-def foobar(request, data):
-    # Copy data so we can modify it; we can't just do dict(data) because if data
-    # is request.POST, that results in a dict containing lists of values
-    data = dict(data.items())
+def create_account_with_params(request, params):
+    """
+    Given a request and a dict of parameters (which may or may not have come
+    from the request), create an account for the requesting user, including
+    creating a comments service user object and sending an activation email.
+    This also takes external/third-party auth into account, updates that as
+    necessary, and authenticates the user for the request's session.
+
+    Does not return anything.
+
+    Raises AccountValidationError if an account with the username or email
+    specified by params already exists, or ValidationError if any of the given
+    parameters is invalid for any other reason.
+    """
+    # Copy params so we can modify it; we can't just do dict(params) because if
+    # params is request.POST, that results in a dict containing lists of values
+    params = dict(params.items())
 
     # allow for microsites to define their own set of required/optional/hidden fields
     extra_fields = microsite.get_value(
@@ -1416,7 +1429,7 @@ def foobar(request, data):
     )
 
     if third_party_auth.is_enabled() and pipeline.running(request):
-        data["password"] = pipeline.make_random_password()
+        params["password"] = pipeline.make_random_password()
 
     # if doing signup for an external authorization, then get email, password, name from the eamap
     # don't use the ones from the form, since the user could have hacked those
@@ -1427,13 +1440,13 @@ def foobar(request, data):
         eamap = request.session['ExternalAuthMap']
         try:
             validate_email(eamap.external_email)
-            data["email"] = eamap.external_email
+            params["email"] = eamap.external_email
         except ValidationError:
             pass
         if eamap.external_name.strip() != '':
-            data["name"] = eamap.external_name
-        data["password"] = eamap.internal_password
-        log.debug(u'In create_account with external_auth: user = %s, email=%s', data["name"], data["email"])
+            params["name"] = eamap.external_name
+        params["password"] = eamap.internal_password
+        log.debug(u'In create_account with external_auth: user = %s, email=%s', params["name"], params["email"])
 
     extended_profile_fields = microsite.get_value('extended_profile_fields', [])
     enforce_password_policy = (
@@ -1451,7 +1464,7 @@ def foobar(request, data):
     )
 
     form = AccountCreationForm(
-        data=data,
+        data=params,
         extra_fields=extra_fields,
         extended_profile_fields=extended_profile_fields,
         enforce_username_neq_password=True,
@@ -1486,7 +1499,7 @@ def foobar(request, data):
             "edx.bi.user.account.registered",
             {
                 'category': 'conversion',
-                'label': data.get('course_id'),
+                'label': params.get('course_id'),
                 'provider': provider_name
             },
             context={
@@ -1534,7 +1547,7 @@ def foobar(request, data):
     # Immediately after a user creates an account, we log them in. They are only
     # logged in until they close the browser. They can't log in again until they click
     # the activation link from the email.
-    new_user = authenticate(username=user.username, password=data['password'])
+    new_user = authenticate(username=user.username, password=params['password'])
     login(request, new_user)
     request.session.set_expiry(0)
 
@@ -1585,7 +1598,7 @@ def create_account(request, post_override=None):
     Used by form in signup_modal.html, which is included into navigation.html
     """
     try:
-        foobar(request, post_override or request.POST)
+        create_account_with_params(request, post_override or request.POST)
     except AccountValidationError as exc:
         return JsonResponse({'success': False, 'value': exc.message, 'field': exc.field}, status=400)
     except ValidationError as exc:

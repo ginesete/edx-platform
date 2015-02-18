@@ -25,7 +25,7 @@ from django_comment_common.models import Role
 from opaque_keys.edx.locations import SlashSeparatedCourseKey
 from edxmako.shortcuts import marketing_link
 
-from student.views import foobar
+from student.views import create_account_with_params
 from util.authentication import SessionAuthenticationAllowInactiveUser
 from util.json_request import JsonResponse
 from .api import account as account_api, profile as profile_api
@@ -282,7 +282,7 @@ class RegistrationView(APIView):
             data["terms_of_service"] = data["honor_code"]
 
         try:
-            foobar(request, data)
+            create_account_with_params(request, data)
         except ValidationError as err:
             # Should only get non-field errors from this function
             assert NON_FIELD_ERRORS not in err.message_dict
