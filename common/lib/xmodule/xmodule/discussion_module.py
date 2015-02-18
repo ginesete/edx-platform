@@ -44,12 +44,19 @@ class DiscussionFields(object):
 
 
 def has_permission(user, permission, course_id):
+    """
+    Copied from django_comment_client/permissions.py because I can't import
+    that file from here. It causes the xmodule_assets command to fail.
+    """
     return any(role.has_permission(permission)
                for role in user.roles.filter(course_id=course_id))
 
 
 @XBlock.wants('user')
 class DiscussionModule(DiscussionFields, XModule):
+    """
+    XModule for discussion forums.
+    """
     js = {
         'coffee': [
             resource_string(__name__, 'js/src/discussion/display.coffee')
