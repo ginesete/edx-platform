@@ -57,7 +57,7 @@ class Command(BaseCommand):
         to_subscribe = get_data(enrolled, exclude=exclude)
 
         with open('to_subscribe.pickle', 'w') as f:
-            pickle.dump(to_subscribe, f)
+            pickle.dump(list(to_subscribe), f)
 
         log.info('About to subscribe {} new users.'.format(len(to_subscribe)))
         subscribe_with_data(mailchimp, list_id, to_subscribe)
