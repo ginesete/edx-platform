@@ -1270,9 +1270,9 @@ def is_course_passed(course, grade_summary=None, student=None, request=None):
 @require_POST
 def generate_user_cert(request, course_id):
     """
-    It will add the add-cert request into the xqueue.
+    It will check all validation and on clearance will add the new-certificate request into the xqueue.
 
-     Arguments:
+     Args:
         request (django request object):  the HTTP request object that triggered this view function
         course_id (unicode):  id associated with the course
 

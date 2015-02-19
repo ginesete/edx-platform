@@ -13,12 +13,12 @@ def generate_user_certificates(student, course):
     """
     It will add the add-cert request into the xqueue.
 
-     Arguments:
+    Args:
         student (object):  user
         course (course object) : course
 
     Returns:
-        returns json response
+        returns status of generated certificate
     """
     xqueue = XQueueCertInterface()
     ret = xqueue.add_cert(student, course.id, course=course)
@@ -43,6 +43,7 @@ def certificate_downloadable_status(student, course_key):
     Args:
         student (user object): logged-in user
         course_key (CourseKey): ID associated with the course
+
     Returns:
         Dict containing student passed status also download url for cert if available
     """

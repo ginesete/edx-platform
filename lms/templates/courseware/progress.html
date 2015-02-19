@@ -64,7 +64,7 @@ from django.utils.http import urlquote_plus
                     <button disabled="disabled">${_('Generate your certificate')}</button>
                     <p class="text-center">${_("Your certificate is currently generating")}</p>
                 %else:
-                    <input type="button" data-endpoint="${reverse('generate_user_cert', args=[unicode(course.id)])}" id="btn_generate_cert" value="${_('Generate your certificate')}">
+                    <button data-endpoint="${reverse('generate_user_cert', args=[unicode(course.id)])}" id="btn_generate_cert">${_('Generate your certificate')}</button>
                 %endif
              %else:
                 <button disabled="disabled">${_('Generate your certificate')}</button>

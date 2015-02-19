@@ -17,7 +17,7 @@ from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from edxmako.middleware import MakoMiddleware
 from edxmako.tests import mako_middleware_process_request
-from mock import MagicMock, patch, create_autospec
+from mock import MagicMock, patch, create_autospec, Mock
 from opaque_keys.edx.locations import Location, SlashSeparatedCourseKey
 
 import courseware.views as views
@@ -695,3 +695,32 @@ class VerifyCourseKeyDecoratorTests(TestCase):
         view_function = ensure_valid_course_key(mocked_view)
         self.assertRaises(Http404, view_function, self.request, course_id=self.invalid_course_id)
         self.assertFalse(mocked_view.called)
+
+
+class IsCoursePassedTest(ModuleStoreTestCase):
+    """
+    Tests for the is_course_passed helper function
+    """
+
+    def setUp(self):
+        super(IsCoursePassedTest, self).setUp()
+
+        self.student = UserFactory()
+        self.course = CourseFactory.create(
+            org='edx',
+            number='verified',
+            display_name='Verified Course',
+            grade_cutoffs={'cutoff': 0.75, 'Pass': 0.5}
+        )
+        self.request_factory = RequestFactory()
+
+    def test_user_fails_if_not_clear_exam(self):
+        self.assertFalse(views.is_course_passed(self.course, None, self.student, self.request_factory))
+
+    @patch('courseware.grades.grade', Mock(return_value={'percent': 0.9}))
+    def test_user_pass_if_percent_appears_above_passing_point(self):
+        self.assertTrue(views.is_course_passed(self.course, None, self.student, self.request_factory))
+
+    @patch('courseware.grades.grade', Mock(return_value={'percent': 0.2}))
+    def test_user_fail_if_percent_appears_below_passing_point(self):
+        self.assertFalse(views.is_course_passed(self.course, None, self.student, self.request_factory))
