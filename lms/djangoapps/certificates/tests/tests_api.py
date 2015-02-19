@@ -12,19 +12,6 @@ from student.tests.factories import UserFactory
 from certificates.models import CertificateStatuses
 from certificates.tests.factories import GeneratedCertificateFactory
 
-mock_grade_summary = {
-    'section_breakdown': [
-        {
-            'category': 'Homework', 'percent': 0.75,
-            'detail': 'Homework 1 - Testing Subsection - 75% (6/8)',
-            'label': 'HW 01'
-        },
-    ],
-    'grade': 'Pass', 'totaled_scores': {}, 'percent': 0.75, 'grade_breakdown': [
-        {'category': 'Homework', 'percent': 0.75, 'detail': 'Homework = 75.00% of a possible 100.00%'}
-    ]
-}
-
 
 class CertificateDownloadableStatusTests(ModuleStoreTestCase):
     """
@@ -141,11 +128,10 @@ class GenerateUserCertificatesTest(ModuleStoreTestCase):
         self.enrollment = CourseEnrollment.enroll(self.student, self.course.id, mode='honor')
         self.request_factory = RequestFactory()
 
-    @patch('courseware.grades.grade', Mock(return_value=mock_grade_summary))
+    @patch('courseware.grades.grade', Mock(return_value={'grade': 'Pass', 'percent': 0.75}))
     def test_new_cert_requests_into_xqueue_returns_generating(self):
         """
         mocking grade.grade and returns a summary with passing score.
         new requests saves into xqueue and returns the status
         """
         self.assertEqual(generate_user_certificates(self.student, self.course), 'generating')
-
