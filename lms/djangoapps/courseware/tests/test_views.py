@@ -697,13 +697,13 @@ class VerifyCourseKeyDecoratorTests(TestCase):
         self.assertFalse(mocked_view.called)
 
 
-class IsCoursePassedTest(ModuleStoreTestCase):
+class IsCoursePassedTests(ModuleStoreTestCase):
     """
     Tests for the is_course_passed helper function
     """
 
     def setUp(self):
-        super(IsCoursePassedTest, self).setUp()
+        super(IsCoursePassedTests, self).setUp()
 
         self.student = UserFactory()
         self.course = CourseFactory.create(

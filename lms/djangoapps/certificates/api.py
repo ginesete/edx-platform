@@ -49,9 +49,8 @@ def certificate_downloadable_status(student, course_key):
     """
     current_status = certificate_status_for_student(student, course_key)
 
-    # If the certificate status is an error,
-    # I think we still want to show the user that the status is "generating".
-    # On the back-end, we are going to monitor those errors and re-submit the task.
+    # If the certificate status is an error user should view that status is "generating".
+    # On the back-end, need to monitor those errors and re-submit the task.
 
     response_data = {
         'is_downloadable': False,
