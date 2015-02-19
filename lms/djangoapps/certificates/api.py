@@ -1,95 +1,38 @@
 """
-Certificates API views
+Certificates API
 """
 
 import logging
-from django.utils.translation import ugettext as _
-from django.views.decorators.http import require_POST
-from django_future.csrf import ensure_csrf_cookie
-from courseware import grades
-from xmodule.modulestore.django import modulestore
-from util.json_request import JsonResponse, JsonResponseBadRequest
 from models import CertificateStatuses as cert_status, certificate_status_for_student
 from queue import XQueueCertInterface
-from opaque_keys.edx.keys import CourseKey
-from opaque_keys import InvalidKeyError
 
 log = logging.getLogger("edx.certificate")
 
 
-@ensure_csrf_cookie
-@require_POST
-def generate_user_cert(request, course_id):
+def generate_user_certificates(student, course):
     """
     It will add the add-cert request into the xqueue.
 
      Arguments:
-        request (django request object):  the HTTP request object that triggered this view function
-        course_id (unicode):  id associated with the course
+        student (object):  user
+        course (course object) : course
 
     Returns:
         returns json response
     """
-
-    if not request.user.is_authenticated():
-        log.info(u"Anon user trying to generate certificate for %s", course_id)
-        return JsonResponseBadRequest(_('You must be logged-in to generate certificate'))
-
-    student = request.user
-
-    # checking course id
-    try:
-        course_key = CourseKey.from_string(course_id)
-    except InvalidKeyError:
-        return JsonResponseBadRequest(_("Course Id is not valid"))
-
-    course = modulestore().get_course(course_key, depth=2)
-    if not course:
-        return JsonResponseBadRequest(_("Course is not valid"))
-
-    if not is_course_passed(course, None, student, request):
-        return JsonResponseBadRequest(_("You failed to pass the course."))
-
     xqueue = XQueueCertInterface()
-
-    certificate_status = certificate_downloadable_status(student, course_key)
-    if not certificate_status["is_downloadable"] and not certificate_status["is_generating"]:
-        ret = xqueue.add_cert(student, course_key, course=course)
-        log.info(
-            (
-                u"Added a certificate generation task to the XQueue "
-                u"for student %s in course '%s'. "
-                u"The new certificate status is '%s'."
-            ),
-            student.id,
-            unicode(course_key),
-            ret
-        )
-        return JsonResponse(_("Certificate generated."))
-        # for any other status return bad request response
-    return JsonResponseBadRequest('')
-
-
-def is_course_passed(course, grade_summary=None, student=None, request=None):
-    """
-    check user's course passing status. return True if passed
-
-    Arguments:
-        course : course object
-        grade_summary (dict) : contains student grade details.
-        student : user object
-        request (HttpRequest)
-
-    Returns:
-        returns bool value
-    """
-    nonzero_cutoffs = [cutoff for cutoff in course.grade_cutoffs.values() if cutoff > 0]
-    success_cutoff = min(nonzero_cutoffs) if nonzero_cutoffs else None
-
-    if grade_summary is None:
-        grade_summary = grades.grade(student, request, course)
-
-    return success_cutoff and grade_summary['percent'] > success_cutoff
+    ret = xqueue.add_cert(student, course.id, course=course)
+    log.info(
+        (
+            u"Added a certificate generation task to the XQueue "
+            u"for student %s in course '%s'. "
+            u"The new certificate status is '%s'."
+        ),
+        student.id,
+        unicode(course.id),
+        ret
+    )
+    return ret
 
 
 def certificate_downloadable_status(student, course_key):
@@ -98,12 +41,16 @@ def certificate_downloadable_status(student, course_key):
     if status is not generating and not downloadable or error then user can view the generate button.
 
     Args:
-        student : user object
-        course_key :  id associated with the course
+        student (user object): logged-in user
+        course_key (CourseKey): ID associated with the course
     Returns:
         Dict containing student passed status also download url for cert if available
     """
     current_status = certificate_status_for_student(student, course_key)
+
+    # If the certificate status is an error,
+    # I think we still want to show the user that the status is "generating".
+    # On the back-end, we are going to monitor those errors and re-submit the task.
 
     response_data = {
         'is_downloadable': False,

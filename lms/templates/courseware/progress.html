@@ -6,7 +6,6 @@
 <%block name="headextra">
 <%static:css group='style-course-vendor'/>
 <%static:css group='style-course'/>
-<script type="text/javascript" src="${static.url('js/courseware/certificates_api.js')}"></script>
 </%block>
 
 
@@ -29,6 +28,7 @@ from django.utils.http import urlquote_plus
 <script type="text/javascript" src="${static.url('js/vendor/flot/jquery.flot.js')}"></script>
 <script type="text/javascript" src="${static.url('js/vendor/flot/jquery.flot.stack.js')}"></script>
 <script type="text/javascript" src="${static.url('js/vendor/flot/jquery.flot.symbol.js')}"></script>
+<script type="text/javascript" src="${static.url('js/courseware/certificates_api.js')}"></script>
 <script>
   ${progress_graph.body(grade_summary, course.grade_cutoffs, "grade-detail-graph", not course.no_grade, not course.no_grade)}
 </script>
@@ -61,13 +61,13 @@ from django.utils.http import urlquote_plus
                     ${_("Download Your Certificate")}
                     </a>
                 %elif is_generating:
-                    <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
+                    <button disabled="disabled">${_('Generate your certificate')}</button>
                     <p class="text-center">${_("Your certificate is currently generating")}</p>
                 %else:
-                    <input type="button" data-endpoint="${reverse('generate_user_cert', args=[course.id.to_deprecated_string()])}" class="btn-blue" id="btn_generate_cert" value="${_('Generate your certificate')}">
+                    <input type="button" data-endpoint="${reverse('generate_user_cert', args=[unicode(course.id)])}" id="btn_generate_cert" value="${_('Generate your certificate')}">
                 %endif
              %else:
-                <input type="button" disabled="disabled" value="${_('Generate your certificate')}">
+                <button disabled="disabled">${_('Generate your certificate')}</button>
                 <p class="text-center">${_("Your certificate is not available.")}</p>
              %endif
            </div>

@@ -671,7 +671,6 @@ class ProgressPageTests(ModuleStoreTestCase):
         resp = views.progress(self.request, course_id=self.course.id.to_deprecated_string())
         self.assertEqual(resp.status_code, 200)
 
-
 class VerifyCourseKeyDecoratorTests(TestCase):
     """
     Tests for the ensure_valid_course_key decorator.
