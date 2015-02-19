@@ -85,6 +85,10 @@ from util.milestones_helpers import (
 
 MINIMUM_GROUP_ID = 100
 
+RANDOM_SCHEME = "random"
+COHORT_SCHEME = "cohort"
+
+
 # Note: the following content group configuration strings are not
 # translated since they are not visible to users.
 CONTENT_GROUP_CONFIGURATION_DESCRIPTION = 'The groups in this configuration can be mapped to cohort groups in the LMS.'
@@ -1406,7 +1410,7 @@ class GroupConfiguration(object):
         )
 
         usage_dict = {'label': u"{} / {}".format(unit.display_name, item.display_name), 'url': unit_url}
-        if scheme_name == UserPartition.RANDOM_SCHEME:
+        if scheme_name == RANDOM_SCHEME:
             validation_summary = item.general_validation_message()
             usage_dict.update({'validation': validation_summary.to_json() if validation_summary else None})
 
@@ -1472,7 +1476,7 @@ class GroupConfiguration(object):
                 item=split_test,
                 usage_info=usage_info,
                 group_id=split_test.user_partition_id,
-                scheme_name=UserPartition.RANDOM_SCHEME
+                scheme_name=RANDOM_SCHEME
             )
         return usage_info
 
@@ -1536,7 +1540,7 @@ class GroupConfiguration(object):
         """
         configuration_json = None
         # Get all Experiments that use particular  Group Configuration in course.
-        if configuration.scheme.name == UserPartition.RANDOM_SCHEME:
+        if configuration.scheme.name == RANDOM_SCHEME:
             split_tests = store.get_items(
                 course.id,
                 category='split_test',
@@ -1545,7 +1549,7 @@ class GroupConfiguration(object):
             configuration_json = configuration.to_json()
             usage_information = GroupConfiguration._get_content_experiment_usage_info(store, course, split_tests)
             configuration_json['usage'] = usage_information.get(configuration.id, [])
-        elif configuration.scheme.name == UserPartition.COHORT_SCHEME:
+        elif configuration.scheme.name == COHORT_SCHEME:
             # In case if scheme is "cohort"
             configuration_json = GroupConfiguration.update_content_group_usage_info(store, course, configuration)
         return configuration_json
@@ -1581,7 +1585,7 @@ class GroupConfiguration(object):
                 name=CONTENT_GROUP_CONFIGURATION_NAME,
                 description=CONTENT_GROUP_CONFIGURATION_DESCRIPTION,
                 groups=[],
-                scheme_id=UserPartition.COHORT_SCHEME
+                scheme_id=COHORT_SCHEME
             )
             return content_group_configuration.to_json()
 
@@ -1598,7 +1602,7 @@ def remove_content_or_experiment_group(request, store, course, configuration, gr
     Remove content group or experiment group configuration only if it's not in use.
     """
     configuration_index = course.user_partitions.index(configuration)
-    if configuration.scheme.name == UserPartition.RANDOM_SCHEME:
+    if configuration.scheme.name == RANDOM_SCHEME:
         usages = GroupConfiguration.get_content_experiment_usage_info(store, course)
         used = int(group_configuration_id) in usages
 
@@ -1608,7 +1612,7 @@ def remove_content_or_experiment_group(request, store, course, configuration, gr
                 status=400
             )
         course.user_partitions.pop(configuration_index)
-    elif configuration.scheme.name == UserPartition.COHORT_SCHEME:
+    elif configuration.scheme.name == COHORT_SCHEME:
         if not group_id:
             return JsonResponse(status=404)
 
